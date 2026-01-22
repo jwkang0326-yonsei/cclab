@@ -274,59 +274,16 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
 
     final isCollapsed = _collapsedBookKeys.contains(bookKey);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // BOOK HEADER - Updated with Checkbox and Toggle
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          color: Colors.grey[100],
-          width: double.infinity,
-          child: Row(
-            children: [
-              Checkbox(
-                value: allSelected && _selectedKeys.isNotEmpty,
-                onChanged: (value) {
-                  _toggleBookSelection(value, bookKey, chapterCount);
-                },
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                     _toggleBookCollapse(bookKey);
-                  },
-                  child: Text(
-                    bookName,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: Icon(isCollapsed ? Icons.expand_more : Icons.expand_less),
-                onPressed: () {
-                  _toggleBookCollapse(bookKey);
-                },
-              ),
-            ],
-          ),
-        ),
-        if (!isCollapsed)
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(12.0),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 5, 
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-            ),
-            itemCount: chapterCount,
-            itemBuilder: (context, index) {
-              final chapterNum = index + 1;
-              return _buildChapterTile(bookKey, bookName, chapterNum, mapState); 
-            },
-          ),
-      ],
+    return BookSection(
+      bookKey: bookKey,
+      bookName: bookName,
+      chapterCount: chapterCount,
+      isCollapsed: isCollapsed,
+      allSelected: allSelected && _selectedKeys.isNotEmpty,
+      mapState: mapState,
+      onToggleCollapse: () => _toggleBookCollapse(bookKey),
+      onToggleSelection: (value) => _toggleBookSelection(value, bookKey, chapterCount),
+      buildChapterTile: (chapterNum) => _buildChapterTile(bookKey, bookName, chapterNum, mapState),
     );
   }
 
@@ -348,6 +305,8 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
       if (shouldSelect) {
         _selectedKeys.addAll(bookChapterKeys);
         _isSelectionMode = true;
+        // Auto-expand when checked
+        _collapsedBookKeys.remove(bookKey);
       } else {
         _selectedKeys.removeAll(bookChapterKeys);
         if (_selectedKeys.isEmpty) {
@@ -436,7 +395,11 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
      
      if (_selectionStartKey == null) {
        // STARTING SELECTION (or Single Tap)
+       // Check if we already have selected keys (e.g. whole book selected).
+       // If keys are selected but startKey is null, a tap clears selection and starts new?
+       
        setState(() {
+         // Clear previous selection if any, start new
          _isSelectionMode = true;
          _selectionStartKey = key;
          _selectedKeys = {key};
@@ -462,11 +425,134 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
            
            setState(() {
              _selectedKeys = newRange;
-             _selectionStartKey = null; // Range completed
+             _selectionStartKey = null; // Range completed (visual confirmation). Next tap resets.
              HapticFeedback.mediumImpact();
            });
          }
        }
      }
+  }
+}
+
+class BookSection extends StatefulWidget {
+  final String bookKey;
+  final String bookName;
+  final int chapterCount;
+  final bool isCollapsed;
+  final bool allSelected;
+  final GroupMapStateModel mapState;
+  final VoidCallback onToggleCollapse;
+  final ValueChanged<bool?> onToggleSelection;
+  final Widget Function(int chapterNum) buildChapterTile;
+
+  const BookSection({
+    super.key,
+    required this.bookKey,
+    required this.bookName,
+    required this.chapterCount,
+    required this.isCollapsed,
+    required this.allSelected,
+    required this.mapState,
+    required this.onToggleCollapse,
+    required this.onToggleSelection,
+    required this.buildChapterTile,
+  });
+
+  @override
+  State<BookSection> createState() => _BookSectionState();
+}
+
+class _BookSectionState extends State<BookSection> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+
+    if (!widget.isCollapsed) {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(BookSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isCollapsed != widget.isCollapsed) {
+      if (widget.isCollapsed) {
+        _controller.reverse();
+      } else {
+        _controller.forward();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // BOOK HEADER
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          color: Colors.grey[100],
+          width: double.infinity,
+          child: Row(
+            children: [
+              Checkbox(
+                value: widget.allSelected,
+                onChanged: widget.onToggleSelection,
+              ),
+              Expanded(
+                child: InkWell(
+                  onTap: widget.onToggleCollapse,
+                  child: Text(
+                    widget.bookName,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: RotationTransition(
+                  turns: Tween(begin: 0.0, end: 0.5).animate(_animation),
+                  child: const Icon(Icons.expand_more),
+                ),
+                onPressed: widget.onToggleCollapse,
+              ),
+            ],
+          ),
+        ),
+        SizeTransition(
+          sizeFactor: _animation,
+          axisAlignment: -1.0,
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(12.0),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5, 
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            itemCount: widget.chapterCount,
+            itemBuilder: (context, index) {
+              final chapterNum = index + 1;
+              return widget.buildChapterTile(chapterNum); 
+            },
+          ),
+        ),
+      ],
+    );
   }
 }
