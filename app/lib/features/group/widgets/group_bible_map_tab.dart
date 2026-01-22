@@ -26,71 +26,74 @@ class _GroupBibleMapTabState extends ConsumerState<GroupBibleMapTab> {
     final status = _showHidden ? 'HIDDEN' : 'ACTIVE';
     final goalsAsync = ref.watch(groupGoalsProvider(GoalsFilter(groupId: widget.groupId, status: status)));
     
-    return Column(
-      children: [
-        // Filter Bar
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+    return goalsAsync.when(
+      data: (goals) {
+        if (goals.isEmpty) {
+          // Empty State with Filter Toggle
+          return ListView(
+            padding: const EdgeInsets.all(16.0),
             children: [
-              FilterChip(
-                label: const Text("숨긴 목표 보기"),
-                selected: _showHidden,
-                onSelected: (value) {
-                  setState(() {
-                    _showHidden = value;
-                  });
-                },
-                showCheckmark: true,
-                selectedColor: Colors.grey[300],
+              _buildFilterBar(),
+              const SizedBox(height: 64),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _showHidden ? Icons.archive_outlined : Icons.map_outlined,
+                      size: 64,
+                      color: Colors.grey
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _showHidden 
+                          ? "숨겨진 목표가 없습니다." 
+                          : "현재 진행 중인 성경 통독 목표가 없습니다.",
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+                    if (!widget.isLeader && !_showHidden) 
+                      const Text("그룹 리더가 목표를 설정할 때까지 기다려주세요."),
+                  ],
+                ),
               ),
             ],
-          ),
-        ),
-        
-        // List
-        Expanded(
-          child: goalsAsync.when(
-            data: (goals) {
-              if (goals.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _showHidden ? Icons.archive_outlined : Icons.map_outlined,
-                        size: 64,
-                        color: Colors.grey
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _showHidden 
-                            ? "숨겨진 목표가 없습니다." 
-                            : "현재 진행 중인 성경 통독 목표가 없습니다.",
-                        style: const TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 24),
-                      if (!widget.isLeader && !_showHidden) 
-                        const Text("그룹 리더가 목표를 설정할 때까지 기다려주세요."),
-                    ],
-                  ),
-                );
-              }
+          );
+        }
 
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                itemCount: goals.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final goal = goals[index];
-                  return GoalCard(goal: goal);
-                },
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, __) => Center(child: Text("Error: $e")),
-          ),
+        // List with Filter Header
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+          itemCount: goals.length + 1, // +1 for Filter Header
+          separatorBuilder: (context, index) => const SizedBox(height: 16),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _buildFilterBar();
+            }
+            final goal = goals[index - 1];
+            return GoalCard(goal: goal);
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, __) => Center(child: Text("Error: $e")),
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        FilterChip(
+          label: const Text("숨긴 목표 보기"),
+          selected: _showHidden,
+          onSelected: (value) {
+            setState(() {
+              _showHidden = value;
+            });
+          },
+          showCheckmark: true,
+          selectedColor: Colors.grey[300],
         ),
       ],
     );
