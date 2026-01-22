@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'widgets/home_header.dart';
-import 'widgets/today_bible_card.dart';
+import 'widgets/home_today_tasks.dart';
 import '../../data/repositories/user_repository.dart';
 import '../group/widgets/group_bible_map_tab.dart';
 
@@ -33,6 +33,8 @@ class HomeScreen extends ConsumerWidget {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          HomeTodayTasks(groupId: user.groupId!),
+                          const SizedBox(height: 20),
                           GroupBibleMapTab(
                             groupId: user.groupId!, 
                             isLeader: user.role == 'leader',
@@ -48,7 +50,6 @@ class HomeScreen extends ConsumerWidget {
                   error: (_, __) => const SizedBox.shrink(),
                 ),
 
-                const TodayBibleCard(),
                 const SizedBox(height: 30),
                 const Center(
                   child: Text(
