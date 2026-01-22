@@ -84,11 +84,27 @@ class SingleGoalTasks extends ConsumerWidget {
             final bookKey = entry.key;
             final chapterNum = entry.value;
             final bookName = BibleConstants.getBookName(bookKey);
+            final totalChapters = BibleConstants.getChapterCount(bookKey);
+
+            // Calculate cleared count for this book by this user
+            int clearedCount = 0;
+            for (int i = 1; i <= totalChapters; i++) {
+              final key = "${bookKey}_$i";
+              final chapterStatus = state.chapters[key];
+              if (chapterStatus != null && 
+                  chapterStatus.status == 'CLEARED' && 
+                  chapterStatus.clearedBy == currentUser.uid) {
+                clearedCount++;
+              }
+            }
 
             return TodayBibleCard(
+              key: ValueKey("${bookKey}_$chapterNum"),
               bookName: bookName,
               chapterNum: chapterNum,
               goalTitle: goal.title,
+              clearedCount: clearedCount,
+              totalChapters: totalChapters,
               onComplete: () {
                 _completeChapter(context, ref, goal.id, bookKey, chapterNum);
               },
