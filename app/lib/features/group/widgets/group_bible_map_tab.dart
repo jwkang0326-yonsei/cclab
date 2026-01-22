@@ -7,11 +7,13 @@ import 'goal_card.dart';
 class GroupBibleMapTab extends ConsumerStatefulWidget {
   final String groupId;
   final bool isLeader;
+  final bool shrinkWrap;
 
   const GroupBibleMapTab({
     super.key,
     required this.groupId,
     required this.isLeader,
+    this.shrinkWrap = false,
   });
 
   @override
@@ -25,12 +27,15 @@ class _GroupBibleMapTabState extends ConsumerState<GroupBibleMapTab> {
   Widget build(BuildContext context) {
     final status = _showHidden ? 'HIDDEN' : 'ACTIVE';
     final goalsAsync = ref.watch(groupGoalsProvider(GoalsFilter(groupId: widget.groupId, status: status)));
+    final scrollPhysics = widget.shrinkWrap ? const NeverScrollableScrollPhysics() : null;
     
     return goalsAsync.when(
       data: (goals) {
         if (goals.isEmpty) {
           // Empty State with Filter Toggle
           return ListView(
+            shrinkWrap: widget.shrinkWrap,
+            physics: scrollPhysics,
             padding: const EdgeInsets.all(16.0),
             children: [
               _buildFilterBar(),
@@ -63,6 +68,8 @@ class _GroupBibleMapTabState extends ConsumerState<GroupBibleMapTab> {
 
         // List with Filter Header
         return ListView.separated(
+          shrinkWrap: widget.shrinkWrap,
+          physics: scrollPhysics,
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
           itemCount: goals.length + 1, // +1 for Filter Header
           separatorBuilder: (context, index) => const SizedBox(height: 16),
