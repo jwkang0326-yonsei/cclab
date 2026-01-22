@@ -4,6 +4,8 @@ class TodayBibleCard extends StatefulWidget {
   final String bookName;
   final int chapterNum;
   final String goalTitle;
+  final int clearedCount;
+  final int totalChapters;
   final VoidCallback onComplete;
 
   const TodayBibleCard({
@@ -11,6 +13,8 @@ class TodayBibleCard extends StatefulWidget {
     required this.bookName,
     required this.chapterNum,
     required this.goalTitle,
+    required this.clearedCount,
+    required this.totalChapters,
     required this.onComplete,
   });
 
@@ -26,8 +30,8 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
       _isCompleting = true;
     });
 
-    // Animation delay
-    await Future.delayed(const Duration(milliseconds: 800));
+    // Animation delay (Reduced to 1/3 for faster feel)
+    await Future.delayed(const Duration(milliseconds: 260));
 
     if (mounted) {
       widget.onComplete();
@@ -37,6 +41,8 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
 
   @override
   Widget build(BuildContext context) {
+    final progress = widget.totalChapters > 0 ? widget.clearedCount / widget.totalChapters : 0.0;
+    
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 16),
@@ -70,6 +76,30 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 8),
+            
+            // Book Progress Info
+            Row(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 4,
+                      backgroundColor: Colors.grey[200],
+                      color: Colors.blueAccent.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  "${widget.clearedCount}/${widget.totalChapters} (${(progress * 100).toInt()}%)",
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
