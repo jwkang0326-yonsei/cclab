@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class TodayBibleCard extends StatelessWidget {
+class TodayBibleCard extends StatefulWidget {
   final String bookName;
   final int chapterNum;
   final String goalTitle;
@@ -13,6 +13,27 @@ class TodayBibleCard extends StatelessWidget {
     required this.goalTitle,
     required this.onComplete,
   });
+
+  @override
+  State<TodayBibleCard> createState() => _TodayBibleCardState();
+}
+
+class _TodayBibleCardState extends State<TodayBibleCard> {
+  bool _isCompleting = false;
+
+  Future<void> _handleComplete() async {
+    setState(() {
+      _isCompleting = true;
+    });
+
+    // Animation delay
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (mounted) {
+      widget.onComplete();
+      // We don't reset _isCompleting immediately to prevent flicker before card removal
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +51,7 @@ class TodayBibleCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    goalTitle,
+                    widget.goalTitle,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Colors.grey[600],
                       fontWeight: FontWeight.bold,
@@ -44,22 +65,28 @@ class TodayBibleCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              '$bookName $chapterNum장',
+              '${widget.bookName} ${widget.chapterNum}장',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                // fontFamily: 'Merriweather', // Removed custom font for consistency or keep if available
               ),
             ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: onComplete,
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('읽음 완료'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: Colors.blueAccent,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                child: FilledButton.icon(
+                  onPressed: _isCompleting ? null : _handleComplete,
+                  icon: _isCompleting 
+                      ? const Icon(Icons.check, color: Colors.white)
+                      : const Icon(Icons.check_circle_outline),
+                  label: Text(_isCompleting ? '완료!' : '읽기 완료'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: _isCompleting ? Colors.green : Colors.blueAccent,
+                    disabledBackgroundColor: Colors.green, // Keep green when disabled during delay
+                    disabledForegroundColor: Colors.white,
+                  ),
                 ),
               ),
             ),

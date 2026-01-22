@@ -124,7 +124,7 @@ class GoalCard extends ConsumerWidget {
                   context.push('/group/bible-map/${goal.id}');
                 },
                 icon: const Icon(Icons.map, size: 18),
-                label: const Text("지도 보기"),
+                label: const Text("성경 읽기 예약하기"),
               ),
             ),
           ],
