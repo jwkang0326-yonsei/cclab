@@ -37,6 +37,18 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
   final Set<String> _collapsedBookKeys = {};
 
   @override
+  void initState() {
+    super.initState();
+    // 기본으로 모든 책을 접은 상태로 시작
+    for (final book in BibleConstants.oldTestament) {
+      _collapsedBookKeys.add(book['key'] as String);
+    }
+    for (final book in BibleConstants.newTestament) {
+      _collapsedBookKeys.add(book['key'] as String);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final mapStateAsync = ref.watch(bibleMapStateProvider(widget.goalId));
     final goalAsync = ref.watch(goalDetailsProvider(widget.goalId));

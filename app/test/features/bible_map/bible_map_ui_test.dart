@@ -66,8 +66,21 @@ void main() {
     // Check for Checkbox
     expect(find.byType(Checkbox), findsOneWidget);
 
-    // Check for Collapse/Expand Icon (ExpandLess by default since it's open)
+    // Check for Collapse/Expand Icon (ExpandMore by default since it's collapsed)
+    expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+    // Chapter 1 should NOT be found (collapsed)
+    expect(find.text('1'), findsNothing);
+
+    // Test Expand Interaction
+    await tester.tap(find.byIcon(Icons.expand_more));
+    await tester.pumpAndSettle();
+
+    // Icon should change to ExpandLess
     expect(find.byIcon(Icons.expand_less), findsOneWidget);
+    
+    // Chapter 1 should be back
+    expect(find.text('1'), findsOneWidget);
 
     // Test Collapse Interaction
     await tester.tap(find.byIcon(Icons.expand_less));
@@ -75,19 +88,9 @@ void main() {
 
     // Icon should change to ExpandMore
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
-    
-    // Check if chapter 1 is NOT found (collapsed)
-    // Finding Text('1') usually works for grid items
     expect(find.text('1'), findsNothing);
 
-    // Expand again
-    await tester.tap(find.byIcon(Icons.expand_more));
-    await tester.pumpAndSettle();
-    
-    // Chapter 1 should be back
-    expect(find.text('1'), findsOneWidget);
-
-    // Test Selection Checkbox
+    // Test Selection Checkbox (Works even if collapsed)
     await tester.tap(find.byType(Checkbox));
     await tester.pumpAndSettle();
 
