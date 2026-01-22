@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart'; // For DateFormat
 import '../../../data/models/group_goal_model.dart';
+import '../../../data/models/group_map_state_model.dart';
 import '../../../data/repositories/group_goal_repository.dart';
 import '../../bible_map/presentation/viewmodels/bible_map_viewmodel.dart';
+import '../../../core/constants/bible_constants.dart';
 
 class GoalCard extends ConsumerWidget {
   final GroupGoalModel goal;
@@ -108,7 +111,7 @@ class GoalCard extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildRecentHistory(context, state.stats.userStats),
+                    _buildDetailedHistory(context, state),
                   ],
                 );
               },
@@ -133,62 +136,121 @@ class GoalCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentHistory(BuildContext context, Map<String, dynamic> userStatsMap) {
-    // Logic: Filter lastActiveAt > 7 days ago, Sort Desc, Take 3
+  Widget _buildDetailedHistory(BuildContext context, GroupMapStateModel state) {
+    // 1. Identify Top 3 Recent Users
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
-    
-    // We assume userStatsMap is Map<String, UserMapStat> but coming from JSON logic it might be dynamic in model
-    // In Model: final Map<String, UserMapStat> userStats;
-    // So it is strongly typed.
-    
-    final recentUsers = userStatsMap.values
-        .where((stat) => stat.lastActiveAt.isAfter(sevenDaysAgo))
+    final sortedUsers = state.stats.userStats.values
+        .where((u) => u.lastActiveAt.isAfter(sevenDaysAgo))
         .toList()
       ..sort((a, b) => b.lastActiveAt.compareTo(a.lastActiveAt));
+    
+    final top3Users = sortedUsers.take(3).toList();
 
-    final top3 = recentUsers.take(3).toList();
+    if (top3Users.isEmpty) return const SizedBox.shrink();
 
-    if (top3.isEmpty) {
-      return const SizedBox.shrink(); // No history to show
+    // 2. Find Last Read Chapter for these users
+    // Map<UserId, ChapterInfo>
+    final Map<String, _ChapterInfo> lastReads = {};
+
+    for (final entry in state.chapters.entries) {
+      final status = entry.value;
+      if (status.status == 'CLEARED' && status.clearedBy != null && status.clearedAt != null) {
+        final userId = status.clearedBy!;
+        // Only care if this user is in top 3
+        if (top3Users.any((u) => u.userId == userId)) {
+           if (!lastReads.containsKey(userId) || 
+               status.clearedAt!.isAfter(lastReads[userId]!.clearedAt)) {
+             
+             // Parse Key "Book_Chapter"
+             final parts = entry.key.split('_');
+             if (parts.length == 2) {
+               lastReads[userId] = _ChapterInfo(
+                 bookKey: parts[0],
+                 chapterNum: parts[1],
+                 clearedAt: status.clearedAt!,
+               );
+             }
+           }
+        }
+      }
     }
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("최근 활동: ", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-        const SizedBox(width: 4),
-        Expanded(
-          child: SizedBox(
-            height: 30,
-            child: Stack(
-              children: List.generate(top3.length, (index) {
-                final user = top3[index];
-                return Positioned(
-                  left: index * 20.0,
-                  child: Tooltip(
-                    message: "${user.displayName} (최근 활동: ${_formatDate(user.lastActiveAt)})",
-                    child: CircleAvatar(
-                      radius: 14,
-                      backgroundColor: Colors.white,
-                      child: CircleAvatar(
-                        radius: 12,
-                        backgroundColor: Colors.primaries[user.displayName.hashCode % Colors.primaries.length],
-                        child: Text(
-                          user.displayName.isNotEmpty ? user.displayName[0] : '?',
-                          style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
+        Text("최근 활동", style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ...top3Users.map((user) {
+          final info = lastReads[user.userId];
+          final bookName = info != null ? BibleConstants.getBookName(info.bookKey) : "";
+          final chapter = info?.chapterNum ?? "";
+          final timeStr = info != null ? _formatRelativeTime(info.clearedAt) : "";
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6.0),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 10,
+                  backgroundColor: Colors.primaries[user.displayName.hashCode % Colors.primaries.length],
+                  child: Text(
+                    user.displayName.isNotEmpty ? user.displayName[0] : '?',
+                    style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
                   ),
-                );
-              }),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  user.displayName,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(width: 4),
+                if (info != null) ...[
+                  Text(
+                    "• $bookName ${chapter}장",
+                    style: const TextStyle(fontSize: 12, color: Colors.black87),
+                  ),
+                  const Spacer(),
+                  Text(
+                    timeStr,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                ] else ...[
+                  const Spacer(),
+                  Text(
+                    "활동 기록 없음",
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                ]
+              ],
             ),
-          ),
-        ),
+          );
+        }),
       ],
     );
   }
 
-  String _formatDate(DateTime date) {
-    return "${date.month}/${date.day}";
+  String _formatRelativeTime(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inDays == 0) {
+      if (diff.inHours == 0) {
+        return "${diff.inMinutes}분 전";
+      }
+      return "오늘";
+    } else if (diff.inDays == 1) {
+      return "어제";
+    } else if (diff.inDays < 7) {
+      return "${diff.inDays}일 전";
+    } else {
+      return DateFormat('MM.dd').format(date);
+    }
   }
+}
+
+class _ChapterInfo {
+  final String bookKey;
+  final String chapterNum;
+  final DateTime clearedAt;
+  _ChapterInfo({required this.bookKey, required this.chapterNum, required this.clearedAt});
 }

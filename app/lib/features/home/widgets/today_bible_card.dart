@@ -30,8 +30,8 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
       _isCompleting = true;
     });
 
-    // Animation delay (Reduced to 1/3 for faster feel)
-    await Future.delayed(const Duration(milliseconds: 260));
+    // Animation delay (Reduced to 150ms for snappy feel)
+    await Future.delayed(const Duration(milliseconds: 150));
 
     if (mounted) {
       widget.onComplete();
@@ -44,9 +44,13 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
     final progress = widget.totalChapters > 0 ? widget.clearedCount / widget.totalChapters : 0.0;
     
     return Card(
-      elevation: 4,
+      elevation: 0, // Flat style for distinction
+      color: Colors.blue[50], // Light blue background
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.blue.withValues(alpha: 0.2), width: 1),
+      ),
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -59,14 +63,14 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
                   child: Text(
                     widget.goalTitle,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Colors.grey[600],
+                      color: Colors.blue[800], // Darker blue text
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Icon(Icons.bookmark_border, color: Colors.blueAccent),
+                const Icon(Icons.bookmark, color: Colors.blueAccent), // Filled icon
               ],
             ),
             const SizedBox(height: 12),
@@ -74,6 +78,7 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
               '${widget.bookName} ${widget.chapterNum}장',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
             ),
             const SizedBox(height: 8),
@@ -87,15 +92,15 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 4,
-                      backgroundColor: Colors.grey[200],
-                      color: Colors.blueAccent.withValues(alpha: 0.5),
+                      backgroundColor: Colors.white, // White background for bar
+                      color: Colors.blueAccent,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   "${widget.clearedCount}/${widget.totalChapters} (${(progress * 100).toInt()}%)",
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 12, color: Colors.blue[800], fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -116,6 +121,7 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
                     backgroundColor: _isCompleting ? Colors.green : Colors.blueAccent,
                     disabledBackgroundColor: Colors.green, // Keep green when disabled during delay
                     disabledForegroundColor: Colors.white,
+                    elevation: 0, // Flat button
                   ),
                 ),
               ),
