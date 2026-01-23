@@ -305,8 +305,6 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
       if (shouldSelect) {
         _selectedKeys.addAll(bookChapterKeys);
         _isSelectionMode = true;
-        // Auto-expand when checked
-        _collapsedBookKeys.remove(bookKey);
       } else {
         _selectedKeys.removeAll(bookChapterKeys);
         if (_selectedKeys.isEmpty) {
@@ -463,14 +461,20 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
        setState(() {
          _isSelectionMode = true;
          _selectionStartKey = key;
-         _selectedKeys = {key};
+         _selectedKeys.add(key); // Merge instead of reset
          HapticFeedback.selectionClick();
        });
      } else {
        final startKey = _selectionStartKey!;
        
        if (key == startKey) {
-         _exitSelectionMode();
+         // Toggle off single item and reset startKey
+         setState(() {
+           _selectionStartKey = null;
+           _selectedKeys.remove(key);
+           if (_selectedKeys.isEmpty) _isSelectionMode = false;
+           HapticFeedback.lightImpact();
+         });
        } else {
          final startIndex = _flattenedKeys.indexOf(startKey);
          final endIndex = _flattenedKeys.indexOf(key);
@@ -482,7 +486,7 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
            final newRange = _flattenedKeys.sublist(min, max + 1).toSet();
            
            setState(() {
-             _selectedKeys = newRange;
+             _selectedKeys.addAll(newRange); // Merge
              _selectionStartKey = null; 
              HapticFeedback.mediumImpact();
            });
