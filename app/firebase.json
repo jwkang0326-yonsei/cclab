@@ -1,0 +1,55 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "cclab-4ec42",
+          "appId": "1:983598640244:android:60548d0ada68f95c9bb521",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "cclab-4ec42",
+          "appId": "1:983598640244:ios:38a0ead3b4ba7fb59bb521",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "cclab-4ec42",
+          "appId": "1:983598640244:ios:38a0ead3b4ba7fb59bb521",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "cclab-4ec42",
+          "configurations": {
+            "android": "1:983598640244:android:60548d0ada68f95c9bb521",
+            "ios": "1:983598640244:ios:38a0ead3b4ba7fb59bb521",
+            "macos": "1:983598640244:ios:38a0ead3b4ba7fb59bb521",
+            "web": "1:983598640244:web:5577fb831280888d9bb521",
+            "windows": "1:983598640244:web:22a41f52f1ef918e9bb521"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

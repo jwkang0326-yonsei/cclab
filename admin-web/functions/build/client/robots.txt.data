@@ -1,0 +1,1 @@
+[{"_1":2},"core/screens/robots",{"_3":4},"data","User-agent: *\nDisallow: /dashboard\nDisallow: /account\nDisallow: /settings\nDisallow: /payments\nDisallow: /api\nAllow: /\n\nSitemap: undefined/sitemap.xml"]

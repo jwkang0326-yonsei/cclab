@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "983598640244",
+    "project_id": "cclab-4ec42",
+    "storage_bucket": "cclab-4ec42.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:983598640244:android:60548d0ada68f95c9bb521",
+        "android_client_info": {
+          "package_name": "com.cclab.with_bible"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "983598640244-cs3dnoioob9h3aahk4jb72144j2eve3r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_Foe24OHYm2OmW1K3QsvnpL2c1zzkURs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "983598640244-cs3dnoioob9h3aahk4jb72144j2eve3r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "983598640244-v6ttth8vm57hdme03jbmtoglcj20c1rs.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.cclab.withBible"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

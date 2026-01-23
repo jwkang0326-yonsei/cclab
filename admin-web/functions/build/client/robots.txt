@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /dashboard
+Disallow: /account
+Disallow: /settings
+Disallow: /payments
+Disallow: /api
+Allow: /
+
+Sitemap: undefined/sitemap.xml
