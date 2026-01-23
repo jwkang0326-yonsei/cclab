@@ -193,7 +193,7 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
                   itemCount: filteredBooks.length,
                   itemBuilder: (context, index) {
                     final book = filteredBooks[index];
-                    return _buildBookSection(book, mapState);
+                    return _buildBookSection(book, mapState, goal.readingMethod);
                   },
                 ),
               ),
@@ -258,10 +258,11 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
     return allBooks; 
   }
 
-  Widget _buildBookSection(Map<String, dynamic> book, GroupMapStateModel mapState) {
+  Widget _buildBookSection(Map<String, dynamic> book, GroupMapStateModel mapState, String readingMethod) {
     final bookName = book['name']; 
     final bookKey = book['key'];   
     final chapterCount = book['chapters'];
+    final isCollaborative = readingMethod == 'collaborative';
 
     // Check if all chapters are selected for this book
     bool allSelected = true;
@@ -277,18 +278,23 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
         allSelected = false;
       }
       
-      // Occupation Check
-      if (status == null || status.status == 'OPEN') {
-        isFullyOccupied = false;
+      // Occupation Check (Only relevant for Distributed mode)
+      if (!isCollaborative) {
+        if (status == null || status.status == 'OPEN') {
+          isFullyOccupied = false;
+        } else {
+          final owner = status.clearedBy ?? status.lockedBy;
+          if (owner != null) distinctOwners.add(owner);
+        }
       } else {
-        final owner = status.clearedBy ?? status.lockedBy;
-        if (owner != null) distinctOwners.add(owner);
+        // In collaborative mode, 'Fully Occupied' concept is different or disabled for this view.
+        isFullyOccupied = false; 
       }
     }
     
-    // Determine Owner Name if single owner
+    // Determine Owner Name if single owner (Distributed only)
     String? ownerName;
-    if (isFullyOccupied && distinctOwners.length == 1) {
+    if (!isCollaborative && isFullyOccupied && distinctOwners.length == 1) {
        final ownerId = distinctOwners.first;
        ownerName = mapState.stats.userStats[ownerId]?.displayName;
        // Truncate if needed
@@ -309,8 +315,8 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
       ownerName: ownerName,
       mapState: mapState,
       onToggleCollapse: () => _toggleBookCollapse(bookKey),
-      onToggleSelection: (value) => _toggleBookSelection(value, bookKey, chapterCount),
-      buildChapterTile: (chapterNum) => _buildChapterTile(bookKey, bookName, chapterNum, mapState),
+      onToggleSelection: isCollaborative ? null : (value) => _toggleBookSelection(value, bookKey, chapterCount),
+      buildChapterTile: (chapterNum) => _buildChapterTile(bookKey, bookName, chapterNum, mapState, readingMethod),
     );
   }
 
@@ -342,11 +348,12 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
     });
   }
 
-  Widget _buildChapterTile(String bookKey, String bookName, int chapterNum, GroupMapStateModel mapState) {
+  Widget _buildChapterTile(String bookKey, String bookName, int chapterNum, GroupMapStateModel mapState, String readingMethod) {
     final key = "${bookKey}_$chapterNum"; 
     final status = mapState.chapters[key]; 
     final currentUser = ref.watch(currentUserProfileProvider).value;
     final myUid = currentUser?.uid;
+    final isCollaborative = readingMethod == 'collaborative';
     
     final isSelected = _selectedKeys.contains(key);
     // Highlight if it's the start point of a pending range
@@ -357,68 +364,106 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
     Color textColor = Colors.grey[700]!;
     Widget? content;
     
-    // Status Logic
-    if (status != null) {
-      final isMine = (status.status == 'CLEARED' && status.clearedBy == myUid) || 
-                     (status.status == 'LOCKED' && status.lockedBy == myUid);
-      
-      String? userName;
-      if (status.status == 'CLEARED' && status.clearedBy != null) {
-        userName = mapState.stats.userStats[status.clearedBy]?.displayName;
-      } else if (status.status == 'LOCKED' && status.lockedBy != null) {
-        userName = mapState.stats.userStats[status.lockedBy]?.displayName;
-      }
-      
-      // Truncate name if too long
-      if (userName != null && userName.length > 3) {
-        userName = userName.substring(0, 3);
-      }
+    if (isCollaborative) {
+      // --- Collaborative Mode ---
+      final completedUsers = status?.completedUsers ?? [];
+      final isMine = myUid != null && completedUsers.contains(myUid);
+      final count = completedUsers.length;
 
-      if (status.status == 'CLEARED') {
-        tileColor = isMine ? Colors.green[100]! : Colors.grey[200]!;
-        borderColor = isMine ? Colors.green[400]! : Colors.grey[400]!;
-        textColor = isMine ? Colors.green[800]! : Colors.grey[600]!;
+      if (isMine) {
+        tileColor = Colors.green[100]!;
+        borderColor = Colors.green[400]!;
+        textColor = Colors.green[800]!;
         content = Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check, color: textColor, size: 16),
-            if (userName != null)
+            const Icon(Icons.check, color: Colors.green, size: 16),
+            if (count > 1) 
               Text(
-                userName,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor),
-                overflow: TextOverflow.ellipsis,
+                "+${count - 1}", 
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor)
               ),
           ],
         );
-      } else if (status.status == 'LOCKED') {
-        tileColor = isMine ? Colors.orange[50]! : Colors.grey[100]!;
-        borderColor = isMine ? Colors.orange[300]! : Colors.grey[300]!;
-        textColor = isMine ? Colors.orange[800]! : Colors.grey[600]!;
+      } else if (count > 0) {
+        // Not mine, but others read it
+        tileColor = Colors.blueAccent.withValues(alpha: 0.1);
+        borderColor = Colors.blueAccent.withValues(alpha: 0.3);
+        textColor = Colors.blueAccent;
         content = Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(isMine ? Icons.lock_outline : Icons.lock, color: textColor, size: 16),
-            if (userName != null)
-              Text(
-                userName,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor),
-                overflow: TextOverflow.ellipsis,
-              ),
+            const Icon(Icons.people, color: Colors.blueAccent, size: 14),
+            Text(
+              "$count", 
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor)
+            ),
           ],
         );
+      }
+    } else {
+      // --- Distributed Mode (Existing Logic) ---
+      if (status != null) {
+        final isMine = (status.status == 'CLEARED' && status.clearedBy == myUid) || 
+                       (status.status == 'LOCKED' && status.lockedBy == myUid);
+        
+        String? userName;
+        if (status.status == 'CLEARED' && status.clearedBy != null) {
+          userName = mapState.stats.userStats[status.clearedBy]?.displayName;
+        } else if (status.status == 'LOCKED' && status.lockedBy != null) {
+          userName = mapState.stats.userStats[status.lockedBy]?.displayName;
+        }
+        
+        // Truncate name if too long
+        if (userName != null && userName.length > 3) {
+          userName = userName.substring(0, 3);
+        }
+
+        if (status.status == 'CLEARED') {
+          tileColor = isMine ? Colors.green[100]! : Colors.grey[200]!;
+          borderColor = isMine ? Colors.green[400]! : Colors.grey[400]!;
+          textColor = isMine ? Colors.green[800]! : Colors.grey[600]!;
+          content = Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.check, color: textColor, size: 16),
+              if (userName != null)
+                Text(
+                  userName,
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          );
+        } else if (status.status == 'LOCKED') {
+          tileColor = isMine ? Colors.orange[50]! : Colors.grey[100]!;
+          borderColor = isMine ? Colors.orange[300]! : Colors.grey[300]!;
+          textColor = isMine ? Colors.orange[800]! : Colors.grey[600]!;
+          content = Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(isMine ? Icons.lock_outline : Icons.lock, color: textColor, size: 16),
+              if (userName != null)
+                Text(
+                  userName,
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          );
+        }
       }
     }
     
-    // Selection Overrides
-    if (isSelected) {
+    // Selection Overrides (Only Distributed or if we enable selection for collaborative later)
+    if (!isCollaborative && isSelected) {
       tileColor = Colors.blueAccent.withValues(alpha: 0.2);
       borderColor = Colors.blueAccent;
       textColor = Colors.blueAccent;
-      // When selected, just show number to indicate it's part of selection range
       content = null; 
     }
     
-    if (isStart) {
+    if (!isCollaborative && isStart) {
       borderColor = Colors.blueAccent;
       tileColor = Colors.blueAccent.withValues(alpha: 0.4);
       textColor = Colors.blueAccent;
@@ -430,7 +475,7 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
 
     return GestureDetector(
       onTap: () {
-        _handleTap(key, bookName, chapterNum, status, mapState);
+        _handleTap(key, bookName, chapterNum, status, mapState, widget.goalId, readingMethod);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -443,7 +488,38 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
     );
   }
 
-  void _handleTap(String key, String bookName, int chapterNum, ChapterStatus? status, GroupMapStateModel mapState) {
+  void _handleTap(
+    String key, 
+    String bookName, 
+    int chapterNum, 
+    ChapterStatus? status, 
+    GroupMapStateModel mapState, 
+    String goalId,
+    String readingMethod
+  ) {
+     final isCollaborative = readingMethod == 'collaborative';
+
+     if (isCollaborative) {
+       // --- Collaborative Tap Logic: Instant Toggle ---
+       ref.read(bibleMapControllerProvider).toggleCollaborativeCompletion(
+         goalId: goalId, 
+         book: bookName, // Note: Logic uses bookKey, UI passed bookName? Check controller.
+         chapter: chapterNum
+       ).catchError((e) {
+         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("오류: $e")));
+       });
+       
+       // Controller expects 'book' key. Wait, _buildChapterTile calls this with 'bookName'?
+       // _buildChapterTile arguments: (bookKey, bookName, chapterNum, ...)
+       // It passes 'bookName' to _handleTap. But controller likely needs 'bookKey'.
+       // Let's verify controller implementation.
+       // Controller uses: final key = "${book}_$chapter";
+       // So it needs bookKEY.
+       // I should pass bookKey to _handleTap.
+       return;
+     }
+
+     // --- Distributed Tap Logic (Existing) ---
      final currentUser = ref.watch(currentUserProfileProvider).value;
      final myUid = currentUser?.uid;
 

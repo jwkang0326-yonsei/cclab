@@ -176,6 +176,84 @@ class GroupGoalRepository {
       });
     });
   }
+  Future<void> toggleCollaborativeChapterCompletion({
+    required String goalId,
+    required String chapterKey,
+    required String userId,
+    required String userName,
+  }) async {
+    final mapRef = _firestore.collection('group_map_state').doc(goalId);
+
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(mapRef);
+      if (!snapshot.exists) return;
+
+      final data = snapshot.data()!;
+      final currentMap = GroupMapStateModel.fromJson(snapshot.id, data);
+      final chapter = currentMap.chapters[chapterKey];
+      
+      final List<String> currentCompletedUsers = chapter?.completedUsers ?? [];
+      final bool isCompleted = currentCompletedUsers.contains(userId);
+      
+      List<String> newCompletedUsers = List.from(currentCompletedUsers);
+      int userClearedDelta = 0;
+
+      if (isCompleted) {
+        // Remove user (Undo completion)
+        newCompletedUsers.remove(userId);
+        userClearedDelta = -1;
+      } else {
+        // Add user (Complete)
+        newCompletedUsers.add(userId);
+        userClearedDelta = 1;
+      }
+
+      // 1. Update Chapter Status
+      // For collaborative, we might want to set 'status' to CLEARED if at least one person read it, 
+      // or keep it OPEN but use completedUsers list. Let's keep status OPEN or infer it.
+      // But to be consistent with Distributed mode visualization, let's keep status as is 
+      // or set to CLEARED if everyone finished (future feature).
+      // For now, we update 'completed_users' field.
+      
+      final newStatus = ChapterStatus(
+        status: chapter?.status ?? 'OPEN', // Keep existing status or default
+        lockedBy: chapter?.lockedBy,
+        lockedAt: chapter?.lockedAt,
+        clearedBy: chapter?.clearedBy,
+        clearedAt: chapter?.clearedAt,
+        completedUsers: newCompletedUsers,
+      );
+
+      // 2. Update User Stats
+      final userStat = currentMap.stats.userStats[userId] ?? 
+          UserMapStat(userId: userId, displayName: userName, lastActiveAt: DateTime.now());
+      
+      final newUserStat = UserMapStat(
+        userId: userId,
+        displayName: userName,
+        clearedCount: userStat.clearedCount + userClearedDelta, // Increment or Decrement
+        lockedCount: userStat.lockedCount,
+        lastActiveAt: DateTime.now(),
+      );
+
+      // 3. Update Global Cleared Count?
+      // In collaborative mode, global cleared count meaning is ambiguous.
+      // Option A: Total unique chapters read by at least one person.
+      // Option B: Sum of all reads by all users.
+      // Let's stick to Option B for "Total Activity", or keep it simple.
+      // Let's NOT update global cleared_count for now to avoid confusion with Distributed mode logic,
+      // OR update it as "Total Reads". Let's update it as Total Reads.
+      
+      final newGlobalCleared = currentMap.stats.clearedCount + userClearedDelta;
+
+      transaction.update(mapRef, {
+        'chapters.$chapterKey': newStatus.toJson(),
+        'stats.user_stats.$userId': newUserStat.toJson(),
+        // 'stats.cleared_count': newGlobalCleared, // Optional: Update if tracking total volume
+      });
+    });
+  }
+
   // Fetch single goal for Map Screen details if needed
   Future<GroupGoalModel?> getGoal(String goalId) async {
     final doc = await _firestore.collection('group_goals').doc(goalId).get();
