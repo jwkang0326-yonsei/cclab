@@ -119,28 +119,83 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
   }
 
   Future<void> _pickDateRange() async {
-    final picked = await showDateRangePicker(
+    DateTime? tempStart = _dateRange?.start;
+    DateTime? tempEnd = _dateRange?.end;
+
+    await showModalBottomSheet(
       context: context,
-      initialDateRange: _dateRange,
-      firstDate: DateTime.now(), // Can't start in past
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Theme.of(context).primaryColor,
-            ),
-          ),
-          child: child!,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text("진행 기간 선택", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 20),
+                    ListTile(
+                      title: const Text("시작일"),
+                      subtitle: Text(tempStart == null ? "선택 안됨" : DateFormat('yyyy.MM.dd').format(tempStart!)),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: tempStart ?? DateTime.now(),
+                          firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                          lastDate: DateTime(2030),
+                        );
+                        if (picked != null) {
+                          setModalState(() => tempStart = picked);
+                        }
+                      },
+                    ),
+                    ListTile(
+                      title: const Text("종료일"),
+                      subtitle: Text(tempEnd == null ? "선택 안됨" : DateFormat('yyyy.MM.dd').format(tempEnd!)),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: tempEnd ?? (tempStart?.add(const Duration(days: 90)) ?? DateTime.now()),
+                          firstDate: tempStart ?? DateTime.now(),
+                          lastDate: DateTime(2030),
+                        );
+                        if (picked != null) {
+                          setModalState(() => tempEnd = picked);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: (tempStart != null && tempEnd != null)
+                          ? () {
+                              setState(() {
+                                _dateRange = DateTimeRange(start: tempStart!, end: tempEnd!);
+                              });
+                              Navigator.pop(context);
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text("기간 저장하기", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
-
-    if (picked != null) {
-      setState(() {
-        _dateRange = picked;
-      });
-    }
   }
 
   Future<void> _submit() async {

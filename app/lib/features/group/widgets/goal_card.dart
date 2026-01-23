@@ -50,6 +50,13 @@ class GoalCard extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "${DateFormat('yyyy.MM.dd').format(goal.startDate)} ~ ${DateFormat('yyyy.MM.dd').format(goal.endDate)}",
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Colors.grey[500],
+                            ),
+                      ),
                     ],
                   ),
                 ),
