@@ -330,23 +330,57 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
     Color tileColor = Colors.white; 
     Color borderColor = Colors.grey[300]!;
     Color textColor = Colors.grey[700]!;
-    IconData? icon;
+    Widget? content;
     
     // Status Logic
     if (status != null) {
       final isMine = (status.status == 'CLEARED' && status.clearedBy == myUid) || 
                      (status.status == 'LOCKED' && status.lockedBy == myUid);
+      
+      String? userName;
+      if (status.status == 'CLEARED' && status.clearedBy != null) {
+        userName = mapState.stats.userStats[status.clearedBy]?.displayName;
+      } else if (status.status == 'LOCKED' && status.lockedBy != null) {
+        userName = mapState.stats.userStats[status.lockedBy]?.displayName;
+      }
+      
+      // Truncate name if too long
+      if (userName != null && userName.length > 3) {
+        userName = userName.substring(0, 3);
+      }
 
       if (status.status == 'CLEARED') {
-        tileColor = isMine ? Colors.green[400]! : Colors.grey[400]!;
+        tileColor = isMine ? Colors.green[100]! : Colors.grey[200]!;
         borderColor = isMine ? Colors.green[400]! : Colors.grey[400]!;
-        textColor = Colors.white;
-        icon = Icons.check;
+        textColor = isMine ? Colors.green[800]! : Colors.grey[600]!;
+        content = Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check, color: textColor, size: 16),
+            if (userName != null)
+              Text(
+                userName,
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor),
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        );
       } else if (status.status == 'LOCKED') {
-        tileColor = isMine ? Colors.orange[100]! : Colors.grey[200]!;
+        tileColor = isMine ? Colors.orange[50]! : Colors.grey[100]!;
         borderColor = isMine ? Colors.orange[300]! : Colors.grey[300]!;
         textColor = isMine ? Colors.orange[800]! : Colors.grey[600]!;
-        icon = isMine ? Icons.lock_outline : Icons.person_outline;
+        content = Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(isMine ? Icons.lock_outline : Icons.lock, color: textColor, size: 16),
+            if (userName != null)
+              Text(
+                userName,
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor),
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        );
       }
     }
     
@@ -355,65 +389,89 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
       tileColor = Colors.blueAccent.withValues(alpha: 0.2);
       borderColor = Colors.blueAccent;
       textColor = Colors.blueAccent;
+      // When selected, just show number to indicate it's part of selection range
+      content = null; 
     }
     
     if (isStart) {
       borderColor = Colors.blueAccent;
       tileColor = Colors.blueAccent.withValues(alpha: 0.4);
       textColor = Colors.blueAccent;
+      content = null;
     }
+
+    // Default Content (Chapter Number)
+    content ??= Text("$chapterNum", style: TextStyle(fontWeight: FontWeight.bold, color: textColor));
 
     return GestureDetector(
       onTap: () {
-        _handleTap(key, bookName, chapterNum, status);
+        _handleTap(key, bookName, chapterNum, status, mapState);
       },
       child: Container(
         decoration: BoxDecoration(
           color: tileColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: borderColor, width: (isSelected || isStart) ? 2 : 1),
-          boxShadow: [
-             if (status?.status == 'CLEARED' && !isSelected)
-               BoxShadow(
-                 color: (status?.clearedBy == myUid ? Colors.green : Colors.grey).withValues(alpha: 0.3), 
-                 blurRadius: 4, 
-                 offset: const Offset(0, 2)
-               )
-          ],
         ),
-        child: Center(
-          child: icon != null && !isSelected
-            ? Icon(icon, color: textColor, size: 20)
-            : Text("$chapterNum", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
-        ),
+        child: Center(child: content),
       ),
     );
   }
 
-  void _handleTap(String key, String bookName, int chapterNum, ChapterStatus? status) {
-     // If already selecting, or first tap triggers selection
-     
+  void _handleTap(String key, String bookName, int chapterNum, ChapterStatus? status, GroupMapStateModel mapState) {
+     final currentUser = ref.watch(currentUserProfileProvider).value;
+     final myUid = currentUser?.uid;
+
+     // 1. Check if occupied by others
+     if (status != null) {
+       bool isOthers = false;
+       String? ownerName;
+       DateTime? date;
+       String action = "";
+
+       if (status.status == 'CLEARED' && status.clearedBy != myUid) {
+         isOthers = true;
+         ownerName = mapState.stats.userStats[status.clearedBy]?.displayName ?? "알 수 없음";
+         date = status.clearedAt;
+         action = "읽음";
+       } else if (status.status == 'LOCKED' && status.lockedBy != myUid) {
+         isOthers = true;
+         ownerName = mapState.stats.userStats[status.lockedBy]?.displayName ?? "알 수 없음";
+         date = status.lockedAt;
+         action = "예약함";
+       }
+
+       if (isOthers) {
+         // Show Info Toast/SnackBar
+         String dateStr = date != null 
+             ? "${date.month}월 ${date.day}일 ${date.hour}시" 
+             : "";
+         ScaffoldMessenger.of(context).hideCurrentSnackBar();
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(
+             content: Text("$ownerName님이 $dateStr에 $action"),
+             duration: const Duration(seconds: 2),
+             behavior: SnackBarBehavior.floating,
+           ),
+         );
+         return; // Do not select
+       }
+     }
+
+     // 2. Normal Selection Logic (Open or Mine)
      if (_selectionStartKey == null) {
-       // STARTING SELECTION (or Single Tap)
-       // Check if we already have selected keys (e.g. whole book selected).
-       // If keys are selected but startKey is null, a tap clears selection and starts new?
-       
        setState(() {
-         // Clear previous selection if any, start new
          _isSelectionMode = true;
          _selectionStartKey = key;
          _selectedKeys = {key};
          HapticFeedback.selectionClick();
        });
      } else {
-       // ALREADY STARTED A RANGE
        final startKey = _selectionStartKey!;
        
        if (key == startKey) {
-         // Tap same key -> Deselect all / Cancel
          _exitSelectionMode();
        } else {
-         // RANGE SELECT
          final startIndex = _flattenedKeys.indexOf(startKey);
          final endIndex = _flattenedKeys.indexOf(key);
          
@@ -425,7 +483,7 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
            
            setState(() {
              _selectedKeys = newRange;
-             _selectionStartKey = null; // Range completed (visual confirmation). Next tap resets.
+             _selectionStartKey = null; 
              HapticFeedback.mediumImpact();
            });
          }
