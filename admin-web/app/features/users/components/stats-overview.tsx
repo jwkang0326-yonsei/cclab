@@ -13,31 +13,31 @@ export function StatsOverview({ memberCount, groupCount, chaptersRead, completio
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <div className="text-sm font-medium">Total Members</div>
+                    <div className="text-sm font-medium">총 회원 수</div>
                     <Users className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="text-2xl font-bold">{memberCount}</div>
-                <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+                <p className="text-xs text-muted-foreground">지난달 대비 +20.1%</p>
             </div>
             <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <div className="text-sm font-medium">Active Groups</div>
+                    <div className="text-sm font-medium">활성 그룹</div>
                     <Crown className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="text-2xl font-bold">{groupCount}</div>
-                <p className="text-xs text-muted-foreground">+3 new groups</p>
+                <p className="text-xs text-muted-foreground">신규 그룹 +3개</p>
             </div>
             <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <div className="text-sm font-medium">Chapters Read</div>
+                    <div className="text-sm font-medium">누적 읽은 장 수</div>
                     <BookOpen className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="text-2xl font-bold">{chaptersRead.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">+12% from last week</p>
+                <p className="text-xs text-muted-foreground">지난주 대비 +12%</p>
             </div>
             <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <div className="text-sm font-medium">Completion Rate</div>
+                    <div className="text-sm font-medium">완독률</div>
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -52,7 +52,7 @@ export function StatsOverview({ memberCount, groupCount, chaptersRead, completio
                     </svg>
                 </div>
                 <div className="text-2xl font-bold">{completionRate}%</div>
-                <p className="text-xs text-muted-foreground">+2.4% from last week</p>
+                <p className="text-xs text-muted-foreground">지난주 대비 +2.4%</p>
             </div>
         </div>
     );

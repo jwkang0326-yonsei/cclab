@@ -13,9 +13,7 @@
     "db:migrate": "drizzle-kit migrate",
     "test:e2e": "npx playwright test",
     "test:e2e:ui": "npx playwright test --ui",
-    "format": "prettier --write \"app/**/*.{ts,tsx,js,jsx,json,css,md,mdx}\"",
-    "build:firebase": "npm run build && rm -rf functions/build && cp -r build functions/build",
-    "deploy:firebase": "npm run build:firebase && firebase deploy"
+    "format": "prettier --write \"app/**/*.{ts,tsx,js,jsx,json,css,md,mdx}\""
   },
   "dependencies": {
     "@hcaptcha/react-hcaptcha": "^1.12.0",

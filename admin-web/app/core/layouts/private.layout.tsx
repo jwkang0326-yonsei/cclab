@@ -1,4 +1,3 @@
-
 import type { Route } from "./+types/private.layout";
 import { Outlet, redirect, useNavigation } from "react-router";
 import { useEffect, useState } from "react";

@@ -14,8 +14,8 @@ export function ReadingProgressChart({ data }: ReadingProgressChartProps) {
     return (
         <div className="rounded-xl border bg-card text-card-foreground shadow col-span-4">
             <div className="p-6 flex flex-col space-y-0.5">
-                <h3 className="font-semibold leading-none tracking-tight">Weekly Reading Progress</h3>
-                <p className="text-sm text-muted-foreground">Chapters read over time</p>
+                <h3 className="font-semibold leading-none tracking-tight">주간 읽기 현황</h3>
+                <p className="text-sm text-muted-foreground">일별 읽기 완료 추이</p>
             </div>
             <div className="p-6 pt-0 pl-2">
                 <ResponsiveContainer width="100%" height={350}>

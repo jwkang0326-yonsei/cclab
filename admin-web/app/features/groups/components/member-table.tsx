@@ -8,6 +8,16 @@ import {
     TableRow,
 } from "~/core/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "~/core/components/ui/avatar";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "~/core/components/ui/select";
+import { updateMemberRole } from "../api/groups";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface Member {
     id: string;
@@ -19,9 +29,25 @@ interface Member {
 
 interface MemberTableProps {
     members: Member[];
+    onUpdate?: () => void;
 }
 
-export function MemberTable({ members }: MemberTableProps) {
+export function MemberTable({ members, onUpdate }: MemberTableProps) {
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+    const handleRoleChange = async (memberId: string, newRole: string) => {
+        setUpdatingId(memberId);
+        try {
+            await updateMemberRole(memberId, newRole);
+            toast.success("역할이 변경되었습니다.");
+            if (onUpdate) onUpdate();
+        } catch (error: any) {
+            toast.error(error.message || "역할 변경 중 오류가 발생했습니다.");
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
     return (
         <div className="rounded-md border">
             <Table>
@@ -51,7 +77,22 @@ export function MemberTable({ members }: MemberTableProps) {
                                 </TableCell>
                                 <TableCell className="font-medium">{member.name}</TableCell>
                                 <TableCell>{member.email}</TableCell>
-                                <TableCell>{member.role}</TableCell>
+                                <TableCell>
+                                    <Select
+                                        disabled={updatingId === member.id}
+                                        defaultValue={member.role.toLowerCase()}
+                                        onValueChange={(value) => handleRoleChange(member.id, value)}
+                                    >
+                                        <SelectTrigger className="w-[120px]">
+                                            <SelectValue placeholder="Select role" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="member">Member</SelectItem>
+                                            <SelectItem value="leader">Leader</SelectItem>
+                                            <SelectItem value="admin">Admin</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
                             </TableRow>
                         ))
                     )}

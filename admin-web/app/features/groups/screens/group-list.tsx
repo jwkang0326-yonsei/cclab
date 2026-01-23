@@ -1,10 +1,11 @@
 
 import type { Route } from "./+types/group-list";
 import { Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "~/core/components/ui/button";
 import { GroupCard } from "../components/group-card";
 import { fetchGroups, type Group } from "../api/groups";
+import { CreateGroupDialog } from "../components/create-group-dialog";
 
 export const meta: Route.MetaFunction = () => {
     return [{ title: "Groups | Admin Web" }];
@@ -16,10 +17,21 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function GroupList() {
     const [groups, setGroups] = useState<Group[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const loadGroups = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await fetchGroups();
+            setGroups(data);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
-        fetchGroups().then(setGroups);
-    }, []);
+        loadGroups();
+    }, [loadGroups]);
 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
@@ -31,15 +43,19 @@ export default function GroupList() {
                     </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" /> Create Group
-                    </Button>
+                    <CreateGroupDialog onSuccess={loadGroups}>
+                        <Button>
+                            <Plus className="mr-2 h-4 w-4" /> Create Group
+                        </Button>
+                    </CreateGroupDialog>
                 </div>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {groups.length === 0 ? (
-                    <p className="text-muted-foreground col-span-full">No groups found.</p>
+                {loading ? (
+                    <p className="text-muted-foreground col-span-full text-center py-10">Loading groups...</p>
+                ) : groups.length === 0 ? (
+                    <p className="text-muted-foreground col-span-full text-center py-10">No groups found.</p>
                 ) : (
                     groups.map((group) => (
                         <GroupCard

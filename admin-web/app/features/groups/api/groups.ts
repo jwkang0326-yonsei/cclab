@@ -5,7 +5,10 @@ import {
     doc,
     getDoc,
     query,
-    where
+    where,
+    addDoc,
+    updateDoc,
+    serverTimestamp
 } from "firebase/firestore";
 import { db } from "~/services/firebase";
 
@@ -22,6 +25,88 @@ export interface Member {
     email: string;
     role: string;
     avatarUrl?: string;
+}
+
+export async function createGroup(name: string, leaderId: string): Promise<string> {
+    try {
+        // 1. Get leader info for denormalization
+        const userDocRef = doc(db, "users", leaderId);
+        const userDoc = await getDoc(userDocRef);
+        const userData = userDoc.exists() ? userDoc.data() : null;
+        const leaderName = userData?.displayName || userData?.name || "Unknown Leader";
+
+        // 2. Create the group
+        const groupsColl = collection(db, "groups");
+        const newGroupRef = await addDoc(groupsColl, {
+            name,
+            leaderId,
+            leaderName,
+            memberCount: 1,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+
+        // 3. Update leader's user document with the new groupId
+        await updateDoc(userDocRef, {
+            groupId: newGroupRef.id,
+            role: "leader", // Optional: update role to leader
+            updatedAt: serverTimestamp(),
+        });
+
+        return newGroupRef.id;
+    } catch (error) {
+        console.error("Error creating group:", error);
+        throw error;
+    }
+}
+
+export async function addMemberToGroup(groupId: string, email: string): Promise<void> {
+    try {
+        // 1. Find user by email
+        const usersColl = collection(db, "users");
+        const q = query(usersColl, where("email", "==", email));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            throw new Error("해당 이메일을 가진 사용자를 찾을 수 없습니다.");
+        }
+
+        const userDoc = snapshot.docs[0];
+        const userRef = doc(db, "users", userDoc.id);
+
+        // 2. Update user document with groupId
+        await updateDoc(userRef, {
+            groupId,
+            updatedAt: serverTimestamp(),
+        });
+
+        // 3. Increment group member count (Optional but recommended)
+        const groupRef = doc(db, "groups", groupId);
+        const groupDoc = await getDoc(groupRef);
+        if (groupDoc.exists()) {
+            const currentCount = groupDoc.data().memberCount || 0;
+            await updateDoc(groupRef, {
+                memberCount: currentCount + 1,
+                updatedAt: serverTimestamp(),
+            });
+        }
+    } catch (error) {
+        console.error("Error adding member to group:", error);
+        throw error;
+    }
+}
+
+export async function updateMemberRole(memberId: string, role: string): Promise<void> {
+    try {
+        const userRef = doc(db, "users", memberId);
+        await updateDoc(userRef, {
+            role,
+            updatedAt: serverTimestamp(),
+        });
+    } catch (error) {
+        console.error("Error updating member role:", error);
+        throw error;
+    }
 }
 
 export async function fetchGroups(): Promise<Group[]> {
