@@ -370,33 +370,45 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
       final isMine = myUid != null && completedUsers.contains(myUid);
       final count = completedUsers.length;
 
-      if (isMine) {
-        tileColor = Colors.green[100]!;
-        borderColor = Colors.green[400]!;
-        textColor = Colors.green[800]!;
+      if (count > 0) {
+        tileColor = isMine ? Colors.green[50]! : Colors.blueAccent.withValues(alpha: 0.05);
+        borderColor = isMine ? Colors.green[300]! : Colors.blueAccent.withValues(alpha: 0.2);
+        textColor = isMine ? Colors.green[800]! : Colors.blueAccent;
+        
+        // Show "Me" as avatar if I read it, otherwise the first person who read it
+        final displayUserId = isMine ? myUid : completedUsers.first;
+        final userStat = mapState.stats.userStats[displayUserId];
+        final name = userStat?.displayName ?? "?";
+        final initial = name.isNotEmpty ? name[0] : "?";
+        final avatarColor = Colors.primaries[displayUserId.hashCode % Colors.primaries.length];
+
         content = Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.check, color: Colors.green, size: 16),
-            if (count > 1) 
-              Text(
-                "+${count - 1}", 
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor)
-              ),
-          ],
-        );
-      } else if (count > 0) {
-        // Not mine, but others read it
-        tileColor = Colors.blueAccent.withValues(alpha: 0.1);
-        borderColor = Colors.blueAccent.withValues(alpha: 0.3);
-        textColor = Colors.blueAccent;
-        content = Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.people, color: Colors.blueAccent, size: 14),
-            Text(
-              "$count", 
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor)
+            if (isMine)
+              const Icon(Icons.check_circle, color: Colors.green, size: 12)
+            else
+              const SizedBox(height: 12), // Space for visual consistency
+            const SizedBox(height: 2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 7,
+                  backgroundColor: avatarColor,
+                  child: Text(
+                    initial, 
+                    style: const TextStyle(fontSize: 7, color: Colors.white, fontWeight: FontWeight.bold)
+                  ),
+                ),
+                if (count > 1) ...[
+                  const SizedBox(width: 1),
+                  Text(
+                    "+${count - 1}", 
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: textColor)
+                  ),
+                ]
+              ],
             ),
           ],
         );
@@ -475,7 +487,22 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
 
     return GestureDetector(
       onTap: () {
-        _handleTap(key, bookName, chapterNum, status, mapState, widget.goalId, readingMethod);
+        _handleTap(key, bookKey, bookName, chapterNum, status, mapState, widget.goalId, readingMethod);
+      },
+      onLongPress: () {
+        if (isCollaborative && status != null && status.completedUsers.isNotEmpty) {
+           final names = status.completedUsers.map((uid) {
+             return mapState.stats.userStats[uid]?.displayName ?? "알 수 없음";
+           }).join(", ");
+           
+           ScaffoldMessenger.of(context).hideCurrentSnackBar();
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+               content: Text("$bookName ${chapterNum}장 읽은 사람: $names"),
+               duration: const Duration(seconds: 3),
+             ),
+           );
+        }
       },
       child: Container(
         decoration: BoxDecoration(
@@ -490,6 +517,7 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
 
   void _handleTap(
     String key, 
+    String bookKey,
     String bookName, 
     int chapterNum, 
     ChapterStatus? status, 
@@ -503,19 +531,12 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
        // --- Collaborative Tap Logic: Instant Toggle ---
        ref.read(bibleMapControllerProvider).toggleCollaborativeCompletion(
          goalId: goalId, 
-         book: bookName, // Note: Logic uses bookKey, UI passed bookName? Check controller.
+         book: bookKey, 
          chapter: chapterNum
        ).catchError((e) {
          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("오류: $e")));
        });
        
-       // Controller expects 'book' key. Wait, _buildChapterTile calls this with 'bookName'?
-       // _buildChapterTile arguments: (bookKey, bookName, chapterNum, ...)
-       // It passes 'bookName' to _handleTap. But controller likely needs 'bookKey'.
-       // Let's verify controller implementation.
-       // Controller uses: final key = "${book}_$chapter";
-       // So it needs bookKEY.
-       // I should pass bookKey to _handleTap.
        return;
      }
 
@@ -609,7 +630,7 @@ class BookSection extends StatefulWidget {
   final String? ownerName;
   final GroupMapStateModel mapState;
   final VoidCallback onToggleCollapse;
-  final ValueChanged<bool?> onToggleSelection;
+  final ValueChanged<bool?>? onToggleSelection;
   final Widget Function(int chapterNum) buildChapterTile;
 
   const BookSection({
@@ -623,7 +644,7 @@ class BookSection extends StatefulWidget {
     this.ownerName,
     required this.mapState,
     required this.onToggleCollapse,
-    required this.onToggleSelection,
+    this.onToggleSelection,
     required this.buildChapterTile,
   });
 

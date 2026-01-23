@@ -90,4 +90,22 @@ class BibleConstants {
     }
     return bookKey;
   }
+
+  static int calculateTotalChapters(List<String> targetRange) {
+    if (targetRange.isEmpty) return 1189; // Default to full bible if empty
+
+    final range = targetRange.first;
+    
+    // Predefined Ranges
+    if (range == 'Genesis-Revelation') return 1189;
+    if (range == 'Genesis-Malachi') return 929;
+    if (range == 'Matthew-Revelation') return 260;
+
+    // Custom Selection (List of Book Keys)
+    int total = 0;
+    for (final bookKey in targetRange) {
+      total += getChapterCount(bookKey);
+    }
+    return total;
+  }
 }

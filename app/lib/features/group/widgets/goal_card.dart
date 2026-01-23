@@ -5,6 +5,7 @@ import 'package:intl/intl.dart'; // For DateFormat
 import '../../../data/models/group_goal_model.dart';
 import '../../../data/models/group_map_state_model.dart';
 import '../../../data/repositories/group_goal_repository.dart';
+import '../../../data/repositories/user_repository.dart';
 import '../../bible_map/presentation/viewmodels/bible_map_viewmodel.dart';
 import '../../../core/constants/bible_constants.dart';
 
@@ -16,6 +17,7 @@ class GoalCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mapStateAsync = ref.watch(bibleMapStateProvider(goal.id));
+    final currentUserAsync = ref.watch(currentUserProfileProvider);
 
     return Card(
       elevation: 2,
@@ -60,26 +62,27 @@ class GoalCard extends ConsumerWidget {
                     ],
                   ),
                 ),
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    if (value == 'toggle_hide') {
-                      final newStatus = goal.status == 'ACTIVE' ? 'HIDDEN' : 'ACTIVE';
-                      ref.read(groupGoalRepositoryProvider).updateGoalStatus(goal.id, newStatus);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(newStatus == 'HIDDEN' ? '목표를 숨겼습니다.' : '목표를 복구했습니다.')),
-                      );
-                    }
-                  },
-                  itemBuilder: (BuildContext context) {
-                    return [
-                      PopupMenuItem(
-                        value: 'toggle_hide',
-                        child: Text(goal.status == 'ACTIVE' ? '숨기기' : '보관함에서 복구'),
-                      ),
-                    ];
-                  },
-                  icon: const Icon(Icons.more_vert, color: Colors.grey),
-                ),
+                if (currentUserAsync.value?.role == 'leader')
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'toggle_hide') {
+                        final newStatus = goal.status == 'ACTIVE' ? 'HIDDEN' : 'ACTIVE';
+                        ref.read(groupGoalRepositoryProvider).updateGoalStatus(goal.id, newStatus);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(newStatus == 'HIDDEN' ? '목표를 숨겼습니다.' : '목표를 복구했습니다.')),
+                        );
+                      }
+                    },
+                    itemBuilder: (BuildContext context) {
+                      return [
+                        PopupMenuItem(
+                          value: 'toggle_hide',
+                          child: Text(goal.status == 'ACTIVE' ? '숨기기' : '보관함에서 복구'),
+                        ),
+                      ];
+                    },
+                    icon: const Icon(Icons.more_vert, color: Colors.grey),
+                  ),
               ],
             ),
             const SizedBox(height: 16),
@@ -134,7 +137,7 @@ class GoalCard extends ConsumerWidget {
                   context.push('/group/bible-map/${goal.id}');
                 },
                 icon: const Icon(Icons.map, size: 18),
-                label: const Text("성경 읽기 예약하기"),
+                label: Text(goal.readingMethod == 'collaborative' ? "성경 읽기 현황" : "성경 읽기 예약하기"),
               ),
             ),
           ],
@@ -161,12 +164,23 @@ class GoalCard extends ConsumerWidget {
 
     for (final entry in state.chapters.entries) {
       final status = entry.value;
-      if (status.status == 'CLEARED' && status.clearedBy != null && status.clearedAt != null) {
-        final userId = status.clearedBy!;
+      
+      // Check for Distributed (clearedBy) OR Collaborative (completedUsers)
+      final List<String> readers = [];
+      if (status.clearedBy != null) readers.add(status.clearedBy!);
+      if (status.completedUsers.isNotEmpty) readers.addAll(status.completedUsers);
+      
+      if (readers.isEmpty) continue;
+      
+      final timestamp = status.clearedAt; // Use chapter timestamp
+      if (timestamp == null) continue;
+
+      for (final userId in readers) {
         // Only care if this user is in top 3
         if (top3Users.any((u) => u.userId == userId)) {
+           // If we have a newer timestamp for this user, update
            if (!lastReads.containsKey(userId) || 
-               status.clearedAt!.isAfter(lastReads[userId]!.clearedAt)) {
+               timestamp.isAfter(lastReads[userId]!.clearedAt)) {
              
              // Parse Key "Book_Chapter"
              final parts = entry.key.split('_');
@@ -174,7 +188,7 @@ class GoalCard extends ConsumerWidget {
                lastReads[userId] = _ChapterInfo(
                  bookKey: parts[0],
                  chapterNum: parts[1],
-                 clearedAt: status.clearedAt!,
+                 clearedAt: timestamp,
                );
              }
            }

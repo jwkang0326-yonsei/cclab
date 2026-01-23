@@ -7,7 +7,6 @@ import '../../data/repositories/user_repository.dart';
 import '../../data/repositories/group_repository.dart';
 import 'viewmodels/group_view_model.dart';
 import 'widgets/group_create_bottom_sheet.dart';
-import 'widgets/group_bible_map_tab.dart'; // Ensure this is imported
 
 class GroupScreen extends ConsumerWidget {
   const GroupScreen({super.key});
@@ -37,7 +36,6 @@ class GroupScreen extends ConsumerWidget {
         // Group Exists and User is Active - Show Admin/Detail View
         final isLeader = user.role == 'leader';
         final tabs = [
-          const Tab(text: '목표'),
           const Tab(text: '구성원'),
           if (isLeader) const Tab(text: '가입 요청'),
         ];
@@ -71,7 +69,6 @@ class GroupScreen extends ConsumerWidget {
             ),
             body: TabBarView(
               children: [
-                GroupBibleMapTab(groupId: user.groupId!, isLeader: isLeader),
                 _buildActiveMembersTab(ref, user.groupId!),
                 if (isLeader) _buildPendingMembersTab(ref, user.groupId!),
               ],

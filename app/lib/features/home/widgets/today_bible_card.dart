@@ -7,6 +7,7 @@ class TodayBibleCard extends StatefulWidget {
   final int clearedCount;
   final int totalChapters;
   final VoidCallback onComplete;
+  final bool isCollaborative;
 
   const TodayBibleCard({
     super.key,
@@ -16,6 +17,7 @@ class TodayBibleCard extends StatefulWidget {
     required this.clearedCount,
     required this.totalChapters,
     required this.onComplete,
+    this.isCollaborative = false,
   });
 
   @override
@@ -43,12 +45,17 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
   Widget build(BuildContext context) {
     final progress = widget.totalChapters > 0 ? widget.clearedCount / widget.totalChapters : 0.0;
     
+    final baseColor = widget.isCollaborative ? Colors.green : Colors.blue;
+    final bgColor = widget.isCollaborative ? Colors.green[50] : Colors.blue[50];
+    final textColor = widget.isCollaborative ? Colors.green[800] : Colors.blue[800];
+    final accentColor = widget.isCollaborative ? Colors.greenAccent[700] : Colors.blueAccent;
+
     return Card(
       elevation: 0, // Flat style for distinction
-      color: Colors.blue[50], // Light blue background
+      color: bgColor, // Light background
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.blue.withValues(alpha: 0.2), width: 1),
+        side: BorderSide(color: baseColor.withValues(alpha: 0.2), width: 1),
       ),
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
@@ -63,14 +70,14 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
                   child: Text(
                     widget.goalTitle,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Colors.blue[800], // Darker blue text
+                      color: textColor, // Darker text
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Icon(Icons.bookmark, color: Colors.blueAccent), // Filled icon
+                Icon(Icons.bookmark, color: accentColor), // Filled icon
               ],
             ),
             const SizedBox(height: 12),
@@ -93,14 +100,14 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
                       value: progress,
                       minHeight: 4,
                       backgroundColor: Colors.white, // White background for bar
-                      color: Colors.blueAccent,
+                      color: accentColor,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   "${widget.clearedCount}/${widget.totalChapters} (${(progress * 100).toInt()}%)",
-                  style: TextStyle(fontSize: 12, color: Colors.blue[800], fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 12, color: textColor, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -118,8 +125,8 @@ class _TodayBibleCardState extends State<TodayBibleCard> {
                   label: Text(_isCompleting ? '완료!' : '읽기 완료'),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    backgroundColor: _isCompleting ? Colors.green : Colors.blueAccent,
-                    disabledBackgroundColor: Colors.green, // Keep green when disabled during delay
+                    backgroundColor: _isCompleting ? Colors.grey : accentColor,
+                    disabledBackgroundColor: Colors.grey, 
                     disabledForegroundColor: Colors.white,
                     elevation: 0, // Flat button
                   ),

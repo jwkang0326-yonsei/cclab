@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/constants/bible_constants.dart';
 import '../models/group_goal_model.dart';
 import '../models/group_map_state_model.dart';
 import 'church_repository.dart'; // for firestoreProvider
@@ -21,8 +22,8 @@ class GroupGoalRepository {
     // For MVP, we initialize an empty map and let it populate lazily or init here.
     // Ideally, we should know the total chapters for progress calculation.
     
-    // Hardcoding total chapters for MVP (e.g., NT = 260)
-    int totalChapters = 260; 
+    // Calculate total chapters dynamically based on target range
+    int totalChapters = BibleConstants.calculateTotalChapters(goal.targetRange); 
 
     final mapState = GroupMapStateModel(
       groupId: goal.groupId, // Keep reference to group
@@ -220,7 +221,7 @@ class GroupGoalRepository {
         lockedBy: chapter?.lockedBy,
         lockedAt: chapter?.lockedAt,
         clearedBy: chapter?.clearedBy,
-        clearedAt: chapter?.clearedAt,
+        clearedAt: DateTime.now(), // Update timestamp for recent activity
         completedUsers: newCompletedUsers,
       );
 
@@ -236,20 +237,28 @@ class GroupGoalRepository {
         lastActiveAt: DateTime.now(),
       );
 
-      // 3. Update Global Cleared Count?
-      // In collaborative mode, global cleared count meaning is ambiguous.
-      // Option A: Total unique chapters read by at least one person.
-      // Option B: Sum of all reads by all users.
-      // Let's stick to Option B for "Total Activity", or keep it simple.
-      // Let's NOT update global cleared_count for now to avoid confusion with Distributed mode logic,
-      // OR update it as "Total Reads". Let's update it as Total Reads.
+      // 3. Update Global Cleared Count (Unique Coverage)
+      int globalClearedDelta = 0;
+      if (isCompleted) {
+        // Removing user
+        if (newCompletedUsers.isEmpty) {
+          // No one left, so it's no longer cleared
+          globalClearedDelta = -1;
+        }
+      } else {
+        // Adding user
+        if (currentCompletedUsers.isEmpty) {
+          // First one to clear it
+          globalClearedDelta = 1;
+        }
+      }
       
-      final newGlobalCleared = currentMap.stats.clearedCount + userClearedDelta;
+      final newGlobalCleared = currentMap.stats.clearedCount + globalClearedDelta;
 
       transaction.update(mapRef, {
         'chapters.$chapterKey': newStatus.toJson(),
         'stats.user_stats.$userId': newUserStat.toJson(),
-        // 'stats.cleared_count': newGlobalCleared, // Optional: Update if tracking total volume
+        'stats.cleared_count': newGlobalCleared, 
       });
     });
   }

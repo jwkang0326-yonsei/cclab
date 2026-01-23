@@ -96,6 +96,8 @@ class BibleMapController {
       print("Bulk Complete Error: $e");
       rethrow;
     }
+  }
+
   Future<void> toggleCollaborativeCompletion({
     required String goalId,
     required String book,

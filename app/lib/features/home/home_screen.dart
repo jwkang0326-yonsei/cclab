@@ -35,14 +35,14 @@ class HomeScreen extends ConsumerWidget {
                         unselectedLabelColor: Colors.grey,
                         indicatorColor: Theme.of(context).colorScheme.primary,
                         tabs: const [
-                          Tab(text: "읽기"),
+                          Tab(text: "체크"),
                           Tab(text: "목표"),
                         ],
                       ),
                       Expanded(
                         child: TabBarView(
                           children: [
-                            // Tab 1: Reading (Today Tasks)
+                            // Tab 1: Check (Reading Tasks)
                             SingleChildScrollView(
                               padding: const EdgeInsets.all(20.0),
                               child: Column(
