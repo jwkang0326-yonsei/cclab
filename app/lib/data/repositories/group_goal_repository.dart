@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../core/constants/bible_constants.dart';
 import '../models/group_goal_model.dart';
 import '../models/group_map_state_model.dart';
@@ -23,7 +24,7 @@ class GroupGoalRepository {
     // Ideally, we should know the total chapters for progress calculation.
     
     // Calculate total chapters dynamically based on target range
-    int totalChapters = BibleConstants.calculateTotalChapters(goal.targetRange); 
+    final int totalChapters = BibleConstants.calculateTotalChapters(goal.targetRange); 
 
     final mapState = GroupMapStateModel(
       groupId: goal.groupId, // Keep reference to group
@@ -131,6 +132,7 @@ class GroupGoalRepository {
     required String userId,
   }) async {
     final mapRef = _firestore.collection('group_map_state').doc(goalId);
+    final goalRef = _firestore.collection('group_goals').doc(goalId);
 
     await _firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(mapRef);
@@ -162,6 +164,8 @@ class GroupGoalRepository {
 
       // 3. Update User Stats (Locked --, Cleared ++)
       final userStat = currentStats.userStats[userId]!; // Should exist if locked
+      final bool isFirstClear = userStat.clearedCount == 0;
+
       final newUserStat = UserMapStat(
         userId: userId,
         displayName: userStat.displayName,
@@ -175,6 +179,20 @@ class GroupGoalRepository {
         'stats.cleared_count': newClearedCount,
         'stats.user_stats.$userId': newUserStat.toJson(),
       });
+
+      // 4. Update Goal Stats (for Admin Web)
+      final String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final Map<String, dynamic> goalUpdates = {
+        'total_cleared_count': FieldValue.increment(1),
+        'daily_stats.$today': FieldValue.increment(1),
+        'updated_at': FieldValue.serverTimestamp(),
+      };
+
+      if (isFirstClear) {
+        goalUpdates['active_participant_count'] = FieldValue.increment(1);
+      }
+
+      transaction.update(goalRef, goalUpdates);
     });
   }
   Future<void> toggleCollaborativeChapterCompletion({
@@ -184,6 +202,7 @@ class GroupGoalRepository {
     required String userName,
   }) async {
     final mapRef = _firestore.collection('group_map_state').doc(goalId);
+    final goalRef = _firestore.collection('group_goals').doc(goalId);
 
     await _firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(mapRef);
@@ -194,12 +213,12 @@ class GroupGoalRepository {
       final chapter = currentMap.chapters[chapterKey];
       
       final List<String> currentCompletedUsers = chapter?.completedUsers ?? [];
-      final bool isCompleted = currentCompletedUsers.contains(userId);
+      final bool isAlreadyCompletedByMe = currentCompletedUsers.contains(userId);
       
-      List<String> newCompletedUsers = List.from(currentCompletedUsers);
-      int userClearedDelta = 0;
+      final List<String> newCompletedUsers = List.from(currentCompletedUsers);
+      final int userClearedDelta;
 
-      if (isCompleted) {
+      if (isAlreadyCompletedByMe) {
         // Remove user (Undo completion)
         newCompletedUsers.remove(userId);
         userClearedDelta = -1;
@@ -210,18 +229,12 @@ class GroupGoalRepository {
       }
 
       // 1. Update Chapter Status
-      // For collaborative, we might want to set 'status' to CLEARED if at least one person read it, 
-      // or keep it OPEN but use completedUsers list. Let's keep status OPEN or infer it.
-      // But to be consistent with Distributed mode visualization, let's keep status as is 
-      // or set to CLEARED if everyone finished (future feature).
-      // For now, we update 'completed_users' field.
-      
       final newStatus = ChapterStatus(
-        status: chapter?.status ?? 'OPEN', // Keep existing status or default
+        status: chapter?.status ?? 'OPEN',
         lockedBy: chapter?.lockedBy,
         lockedAt: chapter?.lockedAt,
         clearedBy: chapter?.clearedBy,
-        clearedAt: DateTime.now(), // Update timestamp for recent activity
+        clearedAt: DateTime.now(),
         completedUsers: newCompletedUsers,
       );
 
@@ -229,26 +242,25 @@ class GroupGoalRepository {
       final userStat = currentMap.stats.userStats[userId] ?? 
           UserMapStat(userId: userId, displayName: userName, lastActiveAt: DateTime.now());
       
+      final int oldUserClearedCount = userStat.clearedCount;
+      final int newUserClearedCount = oldUserClearedCount + userClearedDelta;
+
       final newUserStat = UserMapStat(
         userId: userId,
         displayName: userName,
-        clearedCount: userStat.clearedCount + userClearedDelta, // Increment or Decrement
+        clearedCount: newUserClearedCount,
         lockedCount: userStat.lockedCount,
         lastActiveAt: DateTime.now(),
       );
 
-      // 3. Update Global Cleared Count (Unique Coverage)
+      // 3. Update Global Cleared Count (Unique Coverage in Map State)
       int globalClearedDelta = 0;
-      if (isCompleted) {
-        // Removing user
+      if (isAlreadyCompletedByMe) {
         if (newCompletedUsers.isEmpty) {
-          // No one left, so it's no longer cleared
           globalClearedDelta = -1;
         }
       } else {
-        // Adding user
         if (currentCompletedUsers.isEmpty) {
-          // First one to clear it
           globalClearedDelta = 1;
         }
       }
@@ -260,6 +272,25 @@ class GroupGoalRepository {
         'stats.user_stats.$userId': newUserStat.toJson(),
         'stats.cleared_count': newGlobalCleared, 
       });
+
+      // 4. Update Goal Stats (for Admin Web)
+      final String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final Map<String, dynamic> goalUpdates = {
+        'total_cleared_count': FieldValue.increment(userClearedDelta),
+        'daily_stats.$today': FieldValue.increment(userClearedDelta),
+        'updated_at': FieldValue.serverTimestamp(),
+      };
+
+      // active_participant_count logic:
+      // 0 -> 1 : increment(1)
+      // 1 -> 0 : increment(-1)
+      if (oldUserClearedCount == 0 && newUserClearedCount == 1) {
+        goalUpdates['active_participant_count'] = FieldValue.increment(1);
+      } else if (oldUserClearedCount == 1 && newUserClearedCount == 0) {
+        goalUpdates['active_participant_count'] = FieldValue.increment(-1);
+      }
+
+      transaction.update(goalRef, goalUpdates);
     });
   }
 
@@ -334,6 +365,7 @@ class GroupGoalRepository {
     required String userId,
   }) async {
     final mapRef = _firestore.collection('group_map_state').doc(goalId);
+    final goalRef = _firestore.collection('group_goals').doc(goalId);
 
     await _firestore.runTransaction((transaction) async {
        final snapshot = await transaction.get(mapRef);
@@ -379,6 +411,7 @@ class GroupGoalRepository {
       final userStat = currentStats.userStats[userId];
       final currentLocked = userStat?.lockedCount ?? 0;
       final currentCleared = userStat?.clearedCount ?? 0;
+      final bool isFirstClear = currentCleared == 0;
       
       final newUserStat = UserMapStat(
         userId: userId,
@@ -392,6 +425,20 @@ class GroupGoalRepository {
       updates['stats.user_stats.$userId'] = newUserStat.toJson();
 
       transaction.update(mapRef, updates);
+
+      // Update Goal Stats
+      final String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final Map<String, dynamic> goalUpdates = {
+        'total_cleared_count': FieldValue.increment(addedClearedCount),
+        'daily_stats.$today': FieldValue.increment(addedClearedCount),
+        'updated_at': FieldValue.serverTimestamp(),
+      };
+
+      if (isFirstClear && addedClearedCount > 0) {
+        goalUpdates['active_participant_count'] = FieldValue.increment(1);
+      }
+
+      transaction.update(goalRef, goalUpdates);
     });
   }
 }

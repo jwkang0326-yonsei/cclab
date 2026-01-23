@@ -18,13 +18,22 @@ class GoalCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final mapStateAsync = ref.watch(bibleMapStateProvider(goal.id));
     final currentUserAsync = ref.watch(currentUserProfileProvider);
+    final isHidden = goal.status == 'HIDDEN';
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+    return Opacity(
+      opacity: isHidden ? 0.6 : 1.0,
+      child: Card(
+        elevation: isHidden ? 0 : 2,
+        color: isHidden ? Colors.grey[100] : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: isHidden 
+            ? BorderSide(color: Colors.grey[300]!, width: 1)
+            : BorderSide.none,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header: Title & Menu
@@ -35,13 +44,37 @@ class GoalCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        goal.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              goal.title,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                          ),
+                          if (goal.status == 'HIDDEN') ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                "숨겨짐",
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -132,18 +165,40 @@ class GoalCard extends ConsumerWidget {
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: FilledButton.tonalIcon(
-                onPressed: () {
-                  context.push('/group/bible-map/${goal.id}');
-                },
-                icon: const Icon(Icons.map, size: 18),
-                label: Text(goal.readingMethod == 'collaborative' ? "성경 읽기 현황" : "성경 읽기 예약하기"),
-              ),
+              child: goal.status == 'HIDDEN'
+                  ? (currentUserAsync.value?.role == 'leader'
+                      ? FilledButton.icon(
+                          onPressed: () {
+                            ref.read(groupGoalRepositoryProvider).updateGoalStatus(goal.id, 'ACTIVE');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('목표를 복구했습니다.')),
+                            );
+                          },
+                          icon: const Icon(Icons.unarchive, size: 18),
+                          label: const Text("보관함에서 복구"),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.grey[700],
+                            foregroundColor: Colors.white,
+                          ),
+                        )
+                      : OutlinedButton.icon(
+                          onPressed: null, // Members can't restore
+                          icon: const Icon(Icons.lock_outline, size: 18),
+                          label: const Text("숨겨진 목표입니다"),
+                        ))
+                  : FilledButton.tonalIcon(
+                      onPressed: () {
+                        context.push('/group/bible-map/${goal.id}');
+                      },
+                      icon: const Icon(Icons.map, size: 18),
+                      label: Text(goal.readingMethod == 'collaborative' ? "성경 읽기 현황" : "성경 읽기 예약하기"),
+                    ),
             ),
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildDetailedHistory(BuildContext context, GroupMapStateModel state) {

@@ -20,7 +20,12 @@ class HomeTodayTasks extends ConsumerWidget {
 
     return goalsAsync.when(
       data: (goals) {
-        if (goals.isEmpty) return const SizedBox.shrink();
+        if (goals.isEmpty) {
+          return const _EmptyTaskState(
+            message: "현재 진행 중인 성경 읽기 목표가 없습니다.\n먼저 그룹의 목표를 확인해 주세요.",
+            icon: Icons.assignment_outlined,
+          );
+        }
         
         return Column(
           children: goals.map((goal) => SingleGoalTasks(goal: goal)).toList(),
@@ -28,6 +33,41 @@ class HomeTodayTasks extends ConsumerWidget {
       },
       loading: () => const SizedBox.shrink(), // Don't show loader on home to avoid flicker
       error: (e, st) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _EmptyTaskState extends StatelessWidget {
+  final String message;
+  final IconData icon;
+
+  const _EmptyTaskState({required this.message, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -67,7 +107,15 @@ class SingleGoalTasks extends ConsumerWidget {
       return entry.value.status == 'LOCKED' && entry.value.lockedBy == currentUser.uid;
     }).toList();
 
-    if (myLockedChapters.isEmpty) return const SizedBox.shrink();
+    if (myLockedChapters.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 20.0),
+        child: _EmptyTaskState(
+          message: "'${goal.title}' 목표에서\n읽을 부분을 예약하고 기록해 보세요.",
+          icon: Icons.bookmark_add_outlined,
+        ),
+      );
+    }
 
     // Group by Book and get the minimum chapter for each book
     final Map<String, int> bookMinChapter = {}; 
@@ -162,7 +210,15 @@ class SingleGoalTasks extends ConsumerWidget {
       if (targetBookKey != null) break; // Found the book!
     }
 
-    if (targetBookKey == null || targetChapterNum == null) return const SizedBox.shrink(); // Check both
+    if (targetBookKey == null || targetChapterNum == null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 20.0),
+        child: _EmptyTaskState(
+          message: "'${goal.title}' 목표의 모든 분량을 읽었습니다!\n정말 수고하셨습니다.",
+          icon: Icons.celebration_outlined,
+        ),
+      );
+    }
 
     final bookName = BibleConstants.getBookName(targetBookKey);
     final totalChapters = BibleConstants.getChapterCount(targetBookKey);

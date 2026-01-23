@@ -10,6 +10,10 @@ class GroupGoalModel {
   final DateTime createdAt;
   final String status; // 'ACTIVE', 'COMPLETED', 'ARCHIVED'
   final String readingMethod; // 'distributed' (default) or 'collaborative'
+  final int totalClearedCount;
+  final int activeParticipantCount;
+  final Map<String, int> dailyStats;
+  final DateTime? updatedAt;
 
   const GroupGoalModel({
     required this.id,
@@ -21,6 +25,10 @@ class GroupGoalModel {
     required this.createdAt,
     this.status = 'ACTIVE',
     this.readingMethod = 'distributed',
+    this.totalClearedCount = 0,
+    this.activeParticipantCount = 0,
+    this.dailyStats = const {},
+    this.updatedAt,
   });
 
   factory GroupGoalModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +42,10 @@ class GroupGoalModel {
       createdAt: (json['created_at'] as Timestamp).toDate(),
       status: json['status'] as String? ?? 'ACTIVE',
       readingMethod: json['reading_method'] as String? ?? 'distributed',
+      totalClearedCount: json['total_cleared_count'] as int? ?? 0,
+      activeParticipantCount: json['active_participant_count'] as int? ?? 0,
+      dailyStats: Map<String, int>.from(json['daily_stats'] as Map? ?? {}),
+      updatedAt: json['updated_at'] != null ? (json['updated_at'] as Timestamp).toDate() : null,
     );
   }
 
@@ -48,6 +60,10 @@ class GroupGoalModel {
       'created_at': Timestamp.fromDate(createdAt),
       'status': status,
       'reading_method': readingMethod,
+      'total_cleared_count': totalClearedCount,
+      'active_participant_count': activeParticipantCount,
+      'daily_stats': dailyStats,
+      'updated_at': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
     };
   }
 }
