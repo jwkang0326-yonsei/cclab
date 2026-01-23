@@ -48,7 +48,8 @@ class GroupScreen extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.share),
                   onPressed: () {
-                    final inviteLink = 'withbible://invite/group/${user.groupId}';
+                    const baseUrl = 'https://basketball-timer-e8de7.web.app';
+                    final inviteLink = '$baseUrl/invite/group/${user.groupId}';
                     Share.share('우리 그룹에 초대합니다! 링크를 클릭해 가입하세요:\n$inviteLink');
                   },
                 ),
