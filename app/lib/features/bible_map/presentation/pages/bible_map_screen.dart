@@ -265,11 +265,36 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
 
     // Check if all chapters are selected for this book
     bool allSelected = true;
+    bool isFullyOccupied = true;
+    final Set<String> distinctOwners = {};
+
     for (int i = 1; i <= chapterCount; i++) {
-      if (!_selectedKeys.contains("${bookKey}_$i")) {
+      final key = "${bookKey}_$i";
+      final status = mapState.chapters[key];
+      
+      // Selection Check
+      if (!_selectedKeys.contains(key)) {
         allSelected = false;
-        break;
       }
+      
+      // Occupation Check
+      if (status == null || status.status == 'OPEN') {
+        isFullyOccupied = false;
+      } else {
+        final owner = status.clearedBy ?? status.lockedBy;
+        if (owner != null) distinctOwners.add(owner);
+      }
+    }
+    
+    // Determine Owner Name if single owner
+    String? ownerName;
+    if (isFullyOccupied && distinctOwners.length == 1) {
+       final ownerId = distinctOwners.first;
+       ownerName = mapState.stats.userStats[ownerId]?.displayName;
+       // Truncate if needed
+       if (ownerName != null && ownerName.length > 3) {
+         ownerName = ownerName.substring(0, 3);
+       }
     }
 
     final isCollapsed = _collapsedBookKeys.contains(bookKey);
@@ -280,6 +305,8 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
       chapterCount: chapterCount,
       isCollapsed: isCollapsed,
       allSelected: allSelected && _selectedKeys.isNotEmpty,
+      isFullyOccupied: isFullyOccupied,
+      ownerName: ownerName,
       mapState: mapState,
       onToggleCollapse: () => _toggleBookCollapse(bookKey),
       onToggleSelection: (value) => _toggleBookSelection(value, bookKey, chapterCount),
@@ -502,6 +529,8 @@ class BookSection extends StatefulWidget {
   final int chapterCount;
   final bool isCollapsed;
   final bool allSelected;
+  final bool isFullyOccupied;
+  final String? ownerName;
   final GroupMapStateModel mapState;
   final VoidCallback onToggleCollapse;
   final ValueChanged<bool?> onToggleSelection;
@@ -514,6 +543,8 @@ class BookSection extends StatefulWidget {
     required this.chapterCount,
     required this.isCollapsed,
     required this.allSelected,
+    required this.isFullyOccupied,
+    this.ownerName,
     required this.mapState,
     required this.onToggleCollapse,
     required this.onToggleSelection,
@@ -572,16 +603,59 @@ class _BookSectionState extends State<BookSection> with SingleTickerProviderStat
           width: double.infinity,
           child: Row(
             children: [
-              Checkbox(
-                value: widget.allSelected,
-                onChanged: widget.onToggleSelection,
-              ),
+              if (widget.isFullyOccupied)
+                const Padding(
+                  padding: EdgeInsets.all(12.0),
+                  child: Icon(Icons.lock, color: Colors.grey, size: 20),
+                )
+              else
+                Checkbox(
+                  value: widget.allSelected,
+                  onChanged: widget.onToggleSelection,
+                ),
               Expanded(
                 child: InkWell(
                   onTap: widget.onToggleCollapse,
-                  child: Text(
-                    widget.bookName,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                  child: Row(
+                    children: [
+                      Text(
+                        widget.bookName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold, 
+                          fontSize: 16, 
+                          color: widget.isFullyOccupied ? Colors.grey : Colors.black87
+                        ),
+                      ),
+                      if (widget.ownerName != null) ...[
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircleAvatar(
+                                radius: 8,
+                                backgroundColor: Colors.blueAccent,
+                                child: Text(
+                                  widget.ownerName!.isNotEmpty ? widget.ownerName![0] : '?',
+                                  style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                widget.ownerName!,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
