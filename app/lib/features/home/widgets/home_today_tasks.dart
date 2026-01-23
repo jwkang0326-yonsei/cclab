@@ -56,11 +56,10 @@ class SingleGoalTasks extends ConsumerWidget {
 
         if (myLockedChapters.isEmpty) return const SizedBox.shrink();
 
-        // Group by Book
-        final Map<String, int> bookMinChapter = {}; // bookKey -> minChapter
+        // Group by Book and get the minimum chapter for each book
+        final Map<String, int> bookMinChapter = {}; 
 
         for (final entry in myLockedChapters) {
-          // Key format: "BookKey_ChapterNum"
           final parts = entry.key.split('_');
           if (parts.length != 2) continue;
           
@@ -76,13 +75,18 @@ class SingleGoalTasks extends ConsumerWidget {
           }
         }
 
-        // Sort by Book Order (using BibleConstants indices?) 
-        // For MVP, just keys or insertion order. Map iteration is insertion order (usually).
+        // Sort books by the predefined Bible order (Old + New Testament)
+        final allBooks = [...BibleConstants.oldTestament, ...BibleConstants.newTestament];
+        final sortedBookKeys = bookMinChapter.keys.toList()
+          ..sort((a, b) {
+            final indexA = allBooks.indexWhere((book) => book['key'] == a);
+            final indexB = allBooks.indexWhere((book) => book['key'] == b);
+            return indexA.compareTo(indexB);
+          });
         
         return Column(
-          children: bookMinChapter.entries.map((entry) {
-            final bookKey = entry.key;
-            final chapterNum = entry.value;
+          children: sortedBookKeys.map((bookKey) {
+            final chapterNum = bookMinChapter[bookKey]!;
             final bookName = BibleConstants.getBookName(bookKey);
             final totalChapters = BibleConstants.getChapterCount(bookKey);
 
