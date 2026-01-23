@@ -19,47 +19,65 @@ class HomeScreen extends ConsumerWidget {
       value: SystemUiOverlayStyle.dark, 
       child: Scaffold(
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const HomeHeader(),
-                const SizedBox(height: 30),
-                
-                userProfileAsync.when(
-                  data: (user) {
-                    if (user != null && user.groupId != null && user.groupStatus == 'active') {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          HomeTodayTasks(groupId: user.groupId!),
-                          const SizedBox(height: 20),
-                          GroupBibleMapTab(
-                            groupId: user.groupId!, 
-                            isLeader: user.role == 'leader',
-                            shrinkWrap: true,
-                          ),
-                          const SizedBox(height: 30),
+          child: userProfileAsync.when(
+            data: (user) {
+               return DefaultTabController(
+                length: 2,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: const HomeHeader(),
+                    ),
+                    if (user != null && user.groupId != null && user.groupStatus == 'active') ...[
+                      TabBar(
+                        labelColor: Theme.of(context).colorScheme.primary,
+                        unselectedLabelColor: Colors.grey,
+                        indicatorColor: Theme.of(context).colorScheme.primary,
+                        tabs: const [
+                          Tab(text: "읽기"),
+                          Tab(text: "목표"),
                         ],
-                      );
-                    }
-                    return const SizedBox.shrink(); 
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                      ),
+                      Expanded(
+                        child: TabBarView(
+                          children: [
+                            // Tab 1: Reading (Today Tasks)
+                            SingleChildScrollView(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Column(
+                                children: [
+                                  HomeTodayTasks(groupId: user.groupId!),
+                                  const SizedBox(height: 30),
+                                  const Center(
+                                    child: Text(
+                                      "Build: 2026-01-22 15:35",
+                                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 50), 
+                                ],
+                              ),
+                            ),
+                            // Tab 2: Goals
+                            GroupBibleMapTab(
+                              groupId: user.groupId!, 
+                              isLeader: user.role == 'leader',
+                              shrinkWrap: false,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                       // Fallback for no group/inactive
+                       const Expanded(child: Center(child: Text("그룹에 가입하거나 승인을 기다려주세요.")))
+                    ],
+                  ],
                 ),
-
-                const SizedBox(height: 30),
-                const Center(
-                  child: Text(
-                    "Build: 2026-01-22 15:35",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ),
-                const SizedBox(height: 50), 
-              ],
-            ),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, __) => Center(child: Text("Error: $e")),
           ),
         ),
         floatingActionButton: userProfileAsync.value?.role == 'leader' 
