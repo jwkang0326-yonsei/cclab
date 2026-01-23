@@ -24,6 +24,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
   DateTimeRange? _dateRange;
   String? _selectedCustomBookKey; // For 'Custom' scope
   String? _selectedCustomBookName;
+  Set<String> _readingMethodSelection = {'distributed'}; // Default: Distributed
 
   @override
   void initState() {
@@ -237,6 +238,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
             groupId: widget.groupId,
             title: _titleController.text,
             type: type,
+            readingMethod: _readingMethodSelection.first,
             targetRange: targetRange,
             startDate: _dateRange!.start,
             endDate: _dateRange!.end,
@@ -278,7 +280,42 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
               ),
               const SizedBox(height: 24),
 
-              // 2. Scope Selection
+              // 2. Reading Method (New)
+              Text("진행 방식", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: 'distributed', 
+                    label: Text('나눠서 읽기'), 
+                    icon: Icon(Icons.call_split),
+                    tooltip: '각자 구역을 맡아 빠르게 완독합니다',
+                  ),
+                  ButtonSegment(
+                    value: 'collaborative', 
+                    label: Text('함께 읽기'), 
+                    icon: Icon(Icons.groups),
+                    tooltip: '모두가 같은 본문을 함께 읽습니다',
+                  ),
+                ],
+                selected: _readingMethodSelection,
+                onSelectionChanged: (newSelection) {
+                  setState(() {
+                    _readingMethodSelection = newSelection;
+                  });
+                },
+                showSelectedIcon: false,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _readingMethodSelection.first == 'distributed'
+                    ? "• 공동체가 성경 전체를 분담하여 빠르게 완독하는 방식입니다.\n• 챕터별로 담당자(예약)를 정할 수 있습니다."
+                    : "• 공동체가 같은 본문을 함께 읽으며 은혜를 나누는 방식입니다.\n• 누구나 자유롭게 읽고 체크할 수 있습니다.",
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              ),
+              const SizedBox(height: 24),
+
+              // 3. Scope Selection
               Text("통독 범위", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               SegmentedButton<String>(
