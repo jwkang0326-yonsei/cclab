@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter/foundation.dart'; // For kIsWeb
 import '../../data/models/user_model.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../data/repositories/group_repository.dart';
 import 'viewmodels/group_view_model.dart';
 import 'widgets/group_create_bottom_sheet.dart';
+import 'widgets/group_bible_map_tab.dart'; // Ensure this is imported
 
 class GroupScreen extends ConsumerWidget {
   const GroupScreen({super.key});
@@ -35,6 +37,7 @@ class GroupScreen extends ConsumerWidget {
         // Group Exists and User is Active - Show Admin/Detail View
         final isLeader = user.role == 'leader';
         final tabs = [
+          const Tab(text: '목표'),
           const Tab(text: '구성원'),
           if (isLeader) const Tab(text: '가입 요청'),
         ];
@@ -48,7 +51,9 @@ class GroupScreen extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.share),
                   onPressed: () {
-                    const baseUrl = 'https://basketball-timer-e8de7.web.app';
+                    final String baseUrl = kIsWeb 
+                        ? Uri.base.origin 
+                        : 'https://cclab-4ec42.firebaseapp.com';
                     final inviteLink = '$baseUrl/invite/group/${user.groupId}';
                     Share.share('우리 그룹에 초대합니다! 링크를 클릭해 가입하세요:\n$inviteLink');
                   },
@@ -66,6 +71,7 @@ class GroupScreen extends ConsumerWidget {
             ),
             body: TabBarView(
               children: [
+                GroupBibleMapTab(groupId: user.groupId!, isLeader: isLeader),
                 _buildActiveMembersTab(ref, user.groupId!),
                 if (isLeader) _buildPendingMembersTab(ref, user.groupId!),
               ],
