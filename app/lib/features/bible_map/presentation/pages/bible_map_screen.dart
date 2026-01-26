@@ -183,47 +183,14 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
         ],
         
         Expanded(
-          child: Row(
-            children: [
-              // Main Grid Area
-              Expanded(
-                child: ScrollablePositionedList.builder(
-                  itemScrollController: _itemScrollController,
-                  itemPositionsListener: _itemPositionsListener,
-                  itemCount: filteredBooks.length,
-                  itemBuilder: (context, index) {
-                    final book = filteredBooks[index];
-                    return _buildBookSection(book, mapState, goal.readingMethod);
-                  },
-                ),
-              ),
-              // Quick Jump Sidebar
-              Container(
-                width: 40,
-                color: Colors.grey[50],
-                child: ListView.builder(
-                  itemCount: filteredBooks.length,
-                  itemBuilder: (context, index) {
-                    final bookName = filteredBooks[index]['name'] as String;
-                    final abbr = bookName.length > 2 ? bookName.substring(0, 1) : bookName;
-                    
-                    return GestureDetector(
-                      onTap: () {
-                         _itemScrollController.jumpTo(index: index);
-                      },
-                      child: Container(
-                        height: 30,
-                        alignment: Alignment.center,
-                        child: Text(
-                          abbr,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+          child: ScrollablePositionedList.builder(
+            itemScrollController: _itemScrollController,
+            itemPositionsListener: _itemPositionsListener,
+            itemCount: filteredBooks.length,
+            itemBuilder: (context, index) {
+              final book = filteredBooks[index];
+              return _buildBookSection(book, mapState, goal.readingMethod);
+            },
           ),
         ),
       ],
