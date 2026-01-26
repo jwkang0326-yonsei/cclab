@@ -2,7 +2,7 @@ import type { Translation } from "./types";
 
 const ko: Translation = {
   home: {
-    title: "CCLab Admin",
+    title: "WITHBIBLE",
     subtitle: "공동체 성경 읽기 관리",
   },
   navigation: {

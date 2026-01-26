@@ -19,7 +19,7 @@ class MainLayout extends StatelessWidget {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: '성경읽기'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: '그룹'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '리포트'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: '통계'),
         ],
       ),
     );

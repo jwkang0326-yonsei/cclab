@@ -1,12 +1,12 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/common/main_layout.dart';
-import '../features/common/placeholder_screens.dart';
 import '../features/home/home_screen.dart';
 import '../features/group/group_screen.dart'; // Import real GroupScreen
 import '../features/group/join_group_screen.dart';
 import '../features/bible_map/presentation/pages/create_goal_screen.dart';
 import '../features/bible_map/presentation/pages/bible_map_screen.dart';
+import '../features/statistics/statistics_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/onboarding_screen.dart';
 import '../features/auth/create_church_screen.dart';
@@ -113,7 +113,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/report',
-                builder: (context, state) => const ReportScreen(),
+                builder: (context, state) => const StatisticsScreen(),
               ),
             ],
           ),
