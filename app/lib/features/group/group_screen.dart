@@ -302,10 +302,17 @@ class GroupScreen extends ConsumerWidget {
   }
 
   Future<void> _approveMember(WidgetRef ref, String userId, String groupId) async {
-    await ref.read(groupRepositoryProvider).updateMemberStatus(
-      userId: userId, 
-      status: 'active'
-    );
+    try {
+      await ref.read(groupRepositoryProvider).approveMember(
+        userId: userId, 
+        groupId: groupId,
+      );
+      // UI Feedback for success could be added here if needed
+    } catch (e) {
+      // Handle potential errors (e.g. show snackbar)
+      debugPrint('Error approving member: $e');
+    }
+    // Refresh providers
     ref.invalidate(pendingGroupMembersProvider(groupId));
     ref.invalidate(activeGroupMembersProvider(groupId));
   }

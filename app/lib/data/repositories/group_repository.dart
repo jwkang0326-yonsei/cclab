@@ -51,6 +51,37 @@ class GroupRepository {
       'groupStatus': status,
     });
   }
+
+  /// Approve a member and atomically increment the group's member count
+  Future<void> approveMember({required String userId, required String groupId}) async {
+    await _firestore.runTransaction((transaction) async {
+      final userRef = _firestore.collection('users').doc(userId);
+      final groupRef = _firestore.collection('groups').doc(groupId);
+
+      // 1. Check if group exists
+      final groupSnapshot = await transaction.get(groupRef);
+      if (!groupSnapshot.exists) {
+        throw Exception("Group does not exist!");
+      }
+
+      // 2. Check if user exists and is actually pending (Optional safety check)
+      final userSnapshot = await transaction.get(userRef);
+      if (!userSnapshot.exists) {
+        throw Exception("User does not exist!");
+      }
+      
+      // 3. Update User Status
+      transaction.update(userRef, {
+        'groupStatus': 'active', // Assuming 'active' is the approved status
+      });
+
+      // 4. Increment Group Member Count
+      transaction.update(groupRef, {
+        'memberCount': FieldValue.increment(1),
+      });
+    });
+  }
+
   Future<List<GroupModel>> getGroupsByChurch(String churchId) async {
     final querySnapshot = await _firestore
         .collection('groups')

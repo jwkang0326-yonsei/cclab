@@ -83,8 +83,43 @@ class LoginScreen extends ConsumerWidget {
                         );
                         await userRepo.createUser(userModel);
                       } else {
-                        // User exists, just proceed. 
-                        // Optional: Update last login time if needed.
+                        // User exists. Check for missing data (Smart Sync)
+                        bool needsUpdate = false;
+                        String? newName = existingUser.name;
+                        String newEmail = existingUser.email;
+
+                        // Update name if missing in DB but available in Google
+                        if ((existingUser.name == null || existingUser.name!.isEmpty) && 
+                            user.displayName != null && user.displayName!.isNotEmpty) {
+                          newName = user.displayName;
+                          needsUpdate = true;
+                        }
+
+                        // Update email if missing in DB but available in Google
+                        if (existingUser.email.isEmpty && user.email != null && user.email!.isNotEmpty) {
+                          newEmail = user.email!;
+                          needsUpdate = true;
+                        }
+
+                        if (needsUpdate) {
+                          final updatedUser = UserModel(
+                            uid: user.uid,
+                            email: newEmail,
+                            name: newName,
+                            // Preserve other fields
+                            churchId: existingUser.churchId,
+                            groupId: existingUser.groupId,
+                            groupStatus: existingUser.groupStatus,
+                            role: existingUser.role,
+                          );
+                          // Use createUser which has SetOptions(merge: true)
+                          await userRepo.createUser(updatedUser);
+                          if (context.mounted) {
+                             ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('사용자 정보를 최신 상태로 동기화했습니다.')),
+                            );
+                          }
+                        }
                       }
                       
                       // Navigation is handled by AppRouter redirect
