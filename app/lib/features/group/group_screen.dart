@@ -312,9 +312,6 @@ class GroupScreen extends ConsumerWidget {
       // Handle potential errors (e.g. show snackbar)
       debugPrint('Error approving member: $e');
     }
-    // Refresh providers
-    ref.invalidate(pendingGroupMembersProvider(groupId));
-    ref.invalidate(activeGroupMembersProvider(groupId));
   }
 
   Future<void> _rejectMember(WidgetRef ref, String userId, String groupId) async {
@@ -322,7 +319,6 @@ class GroupScreen extends ConsumerWidget {
       userId: userId, 
       status: 'rejected'
     );
-    ref.invalidate(pendingGroupMembersProvider(groupId));
   }
 
   void _showCreateGroupSheet(BuildContext context) {

@@ -46,6 +46,20 @@ class GroupRepository {
         .toList();
   }
 
+  Stream<List<UserModel>> getMembersStream({required String groupId, String? status}) {
+    Query query = _firestore.collection('users').where('groupId', isEqualTo: groupId);
+    
+    if (status != null) {
+      query = query.where('groupStatus', isEqualTo: status);
+    }
+    
+    return query.snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => UserModel.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+    });
+  }
+
   Future<void> updateMemberStatus({required String userId, required String status}) async {
     await _firestore.collection('users').doc(userId).update({
       'groupStatus': status,

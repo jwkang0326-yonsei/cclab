@@ -63,10 +63,10 @@ final groupViewModelProvider = NotifierProvider<GroupViewModel, AsyncValue<void>
   return GroupViewModel();
 });
 
-final pendingGroupMembersProvider = FutureProvider.family<List<UserModel>, String>((ref, groupId) {
-  return ref.watch(groupRepositoryProvider).getMembers(groupId: groupId, status: 'pending');
+final pendingGroupMembersProvider = StreamProvider.family<List<UserModel>, String>((ref, groupId) {
+  return ref.watch(groupRepositoryProvider).getMembersStream(groupId: groupId, status: 'pending');
 });
 
-final activeGroupMembersProvider = FutureProvider.family<List<UserModel>, String>((ref, groupId) {
-  return ref.watch(groupRepositoryProvider).getMembers(groupId: groupId, status: 'active');
+final activeGroupMembersProvider = StreamProvider.family<List<UserModel>, String>((ref, groupId) {
+  return ref.watch(groupRepositoryProvider).getMembersStream(groupId: groupId, status: 'active');
 });
