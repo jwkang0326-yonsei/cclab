@@ -13,4 +13,10 @@ import UIKit
     print("📱 AppDelegate: Plugins Registered")
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+
+  // 카카오 로그인 콜백 처리
+  override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+    print("📱 AppDelegate: openURL called with \(url)")
+    return super.application(app, open: url, options: options)
+  }
 }

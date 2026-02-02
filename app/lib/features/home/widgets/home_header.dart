@@ -10,6 +10,10 @@ import 'package:go_router/go_router.dart';
 class HomeHeader extends ConsumerWidget {
   const HomeHeader({super.key});
 
+  // 앱스토어 스크린샷용 더미 데이터
+  static const bool _isScreenshotMode = false; // 릴리즈 전 false로 변경
+  static const String _dummyName = '김성경';
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -21,58 +25,50 @@ class HomeHeader extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
+        final displayName = _isScreenshotMode ? _dummyName : user.name;
+
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '안녕하세요,',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '안녕하세요,',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-                Text(
-                  '${user.name}님, 환영합니다',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
+                  Text(
+                    '${displayName}님, 환영합니다',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                ),
-                if (user.churchId != null) ...[
-                  const SizedBox(height: 8),
-                  _ChurchGroupInfo(
-                    churchId: user.churchId!,
-                    groupId: user.groupId,
-                    role: user.role,
-                  ),
-                ]
-              ],
+                  if (user.churchId != null) ...[
+                    const SizedBox(height: 8),
+                    _ChurchGroupInfo(
+                      churchId: user.churchId!,
+                      groupId: user.groupId,
+                      role: user.role,
+                      position: user.position,
+                    ),
+                  ]
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             IconButton(
               onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text("로그아웃"),
-                    content: const Text("정말 로그아웃 하시겠습니까?"),
-                    actions: [
-                      TextButton(onPressed: () => context.pop(), child: const Text("취소")),
-                      TextButton(
-                        onPressed: () async {
-                          context.pop();
-                          await ref.read(authRepositoryProvider).signOut();
-                        },
-                        child: const Text("로그아웃", style: TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  ),
-                );
+                Scaffold.of(context).openEndDrawer();
               },
-              icon: const Icon(Icons.logout),
-              tooltip: "로그아웃",
+              icon: const Icon(Icons.menu),
+              tooltip: "메뉴",
             ),
           ],
         );
@@ -87,11 +83,13 @@ class _ChurchGroupInfo extends ConsumerWidget {
   final String churchId;
   final String? groupId;
   final String role;
+  final String? position;
 
   const _ChurchGroupInfo({
     required this.churchId,
     this.groupId,
     required this.role,
+    this.position,
   });
 
   String _getRoleDisplayName(String role) {
@@ -130,7 +128,7 @@ class _ChurchGroupInfo extends ConsumerWidget {
           children: [
             _InfoBadge(
               icon: Icons.verified_user_outlined, 
-              text: _getRoleDisplayName(role),
+              text: position ?? _getRoleDisplayName(role),
               backgroundColor: role == 'admin' ? Colors.amber.withOpacity(0.2) : null,
             ),
             if (church != null)

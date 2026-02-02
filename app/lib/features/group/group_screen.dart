@@ -216,7 +216,34 @@ class GroupScreen extends ConsumerWidget {
     );
   }
 
+  // 앱스토어 스크린샷용 더미 데이터
+  static const bool _isScreenshotMode = false; // 릴리즈 전 false로 변경
+  static const List<Map<String, String>> _dummyMembers = [
+    {'name': '김성경', 'email': 'bible.kim@example.com'},
+    {'name': '박믿음', 'email': 'faith.park@example.com'},
+    {'name': '이소망', 'email': 'hope.lee@example.com'},
+    {'name': '최사랑', 'email': 'love.choi@example.com'},
+    {'name': '정은혜', 'email': 'grace.jung@example.com'},
+    {'name': '한기쁨', 'email': 'joy.han@example.com'},
+    {'name': '윤평화', 'email': 'peace.yoon@example.com'},
+  ];
+
   Widget _buildActiveMembersTab(WidgetRef ref, String groupId) {
+    // 스크린샷 모드일 경우 더미 데이터 사용
+    if (_isScreenshotMode) {
+      return ListView.builder(
+        itemCount: _dummyMembers.length,
+        itemBuilder: (context, index) {
+          final member = _dummyMembers[index];
+          return ListTile(
+            leading: CircleAvatar(child: Text(member['name']![0])),
+            title: Text(member['name']!),
+            subtitle: Text(member['email']!),
+          );
+        },
+      );
+    }
+
     final activeMembersAsync = ref.watch(activeGroupMembersProvider(groupId));
     
     return activeMembersAsync.when(

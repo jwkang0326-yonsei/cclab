@@ -1,0 +1,12 @@
+{
+  "name": "withbible-screenshots",
+  "version": "1.0.0",
+  "description": "앱 스토어 스크린샷 자동 캡처",
+  "scripts": {
+    "capture": "node capture-screenshots.js",
+    "capture:login": "node capture-screenshots.js --login"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}

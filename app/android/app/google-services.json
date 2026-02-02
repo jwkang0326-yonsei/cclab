@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "983598640244-0t2pttag3e2odcrlo7vobtbkmns4ktpg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cclab.with_bible",
+            "certificate_hash": "d27aa724bda057214c8062567a6b249ac9662618"
+          }
+        },
+        {
           "client_id": "983598640244-cs3dnoioob9h3aahk4jb72144j2eve3r.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -31,10 +39,46 @@
               "client_type": 3
             },
             {
-              "client_id": "983598640244-v6ttth8vm57hdme03jbmtoglcj20c1rs.apps.googleusercontent.com",
+              "client_id": "983598640244-o0so8gm50m5tqfjtut6nbrokvqko7773.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.cclab.withBible"
+                "bundle_id": "com.cclab.withBible.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:983598640244:android:c3fe95845472bb4e9bb521",
+        "android_client_info": {
+          "package_name": "org.cclab.withbible"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "983598640244-cs3dnoioob9h3aahk4jb72144j2eve3r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_Foe24OHYm2OmW1K3QsvnpL2c1zzkURs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "983598640244-cs3dnoioob9h3aahk4jb72144j2eve3r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "983598640244-o0so8gm50m5tqfjtut6nbrokvqko7773.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.cclab.withBible.app"
               }
             }
           ]

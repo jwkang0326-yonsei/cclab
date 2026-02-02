@@ -8,7 +8,8 @@ import {
     where,
     addDoc,
     updateDoc,
-    serverTimestamp
+    serverTimestamp,
+    runTransaction
 } from "firebase/firestore";
 import { db } from "~/services/firebase";
 
@@ -29,31 +30,43 @@ export interface Member {
 
 export async function createGroup(name: string, leaderId: string): Promise<string> {
     try {
-        // 1. Get leader info for denormalization
-        const userDocRef = doc(db, "users", leaderId);
-        const userDoc = await getDoc(userDocRef);
-        const userData = userDoc.exists() ? userDoc.data() : null;
-        const leaderName = userData?.displayName || userData?.name || "Unknown Leader";
+        const result = await runTransaction(db, async (transaction) => {
+            // 1. Get leader info
+            const userDocRef = doc(db, "users", leaderId);
+            const userDoc = await transaction.get(userDocRef);
+            
+            if (!userDoc.exists()) {
+                throw new Error("사용자 정보를 찾을 수 없습니다.");
+            }
 
-        // 2. Create the group
-        const groupsColl = collection(db, "groups");
-        const newGroupRef = await addDoc(groupsColl, {
-            name,
-            leaderId,
-            leaderName,
-            memberCount: 1,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
+            const userData = userDoc.data();
+            const leaderName = userData?.displayName || userData?.name || "Unknown Leader";
+
+            // 2. Prepare new group reference
+            const groupsColl = collection(db, "groups");
+            const newGroupRef = doc(groupsColl); // Generate ID first
+
+            // 3. Create the group
+            transaction.set(newGroupRef, {
+                name,
+                leaderId,
+                leaderName,
+                memberCount: 1,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            // 4. Update leader's user document
+            transaction.update(userDocRef, {
+                groupId: newGroupRef.id,
+                role: "leader",
+                updatedAt: serverTimestamp(),
+            });
+
+            return newGroupRef.id;
         });
 
-        // 3. Update leader's user document with the new groupId
-        await updateDoc(userDocRef, {
-            groupId: newGroupRef.id,
-            role: "leader", // Optional: update role to leader
-            updatedAt: serverTimestamp(),
-        });
-
-        return newGroupRef.id;
+        return result;
     } catch (error) {
         console.error("Error creating group:", error);
         throw error;

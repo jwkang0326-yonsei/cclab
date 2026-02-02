@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>Kakao Auth</title>
+</head>
+<body>
+    <script>
+        // Kakao SDK for Flutter Web 에서 사용하는 리다이렉트 핸들러
+        window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m, key, value) {
+            if (key === "code") {
+                // 인증 코드 전달
+                window.opener.postMessage(value, window.location.origin);
+                window.close();
+            } else if (key === "error") {
+                // 에러 발생 시 전달
+                window.opener.postMessage("error:" + value, window.location.origin);
+                window.close();
+            }
+        });
+    </script>
+</body>
+</html>

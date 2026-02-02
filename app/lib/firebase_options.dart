@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '983598640244',
     projectId: 'cclab-4ec42',
     storageBucket: 'cclab-4ec42.firebasestorage.app',
-    iosBundleId: 'com.cclab.withBible.app',
+    iosBundleId: 'org.cclab.withbible',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -73,7 +73,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '983598640244',
     projectId: 'cclab-4ec42',
     storageBucket: 'cclab-4ec42.firebasestorage.app',
-    iosBundleId: 'com.cclab.withBible.app',
+    iosBundleId: 'org.cclab.withbible',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

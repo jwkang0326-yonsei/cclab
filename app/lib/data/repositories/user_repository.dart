@@ -15,26 +15,8 @@ class UserRepository {
     );
   }
 
-  Future<UserModel?> getUser(String uid) async {
-    final doc = await _firestore.collection('users').doc(uid).get();
-    if (doc.exists && doc.data() != null) {
-      final data = doc.data()!;
-      data['uid'] = doc.id;
-      return UserModel.fromJson(data);
-    }
-    return null;
-  }
-
-  // Stream current user data
-  Stream<UserModel?> watchUser(String uid) {
-    return _firestore.collection('users').doc(uid).snapshots().map((snapshot) {
-      if (snapshot.exists && snapshot.data() != null) {
-        final data = snapshot.data()!;
-        data['uid'] = snapshot.id; // Ensure uid is set from document ID
-        return UserModel.fromJson(data);
-      }
-      return null;
-    });
+  Future<void> deleteUser(String uid) async {
+    await _firestore.collection('users').doc(uid).delete();
   }
 
   Future<void> updateChurchId(String uid, String churchId) async {
@@ -53,6 +35,23 @@ class UserRepository {
   Future<void> updateUserRole(String uid, String role) async {
     await _firestore.collection('users').doc(uid).update({
       'role': role,
+    });
+  }
+
+  Future<UserModel?> getUser(String uid) async {
+    final doc = await _firestore.collection('users').doc(uid).get();
+    if (doc.exists) {
+      return UserModel.fromJson(doc.data()!);
+    }
+    return null;
+  }
+
+  Stream<UserModel?> watchUser(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
+      if (doc.exists && doc.data() != null) {
+        return UserModel.fromJson(doc.data()!);
+      }
+      return null;
     });
   }
 }

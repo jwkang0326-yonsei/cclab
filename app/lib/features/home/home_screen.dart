@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_today_tasks.dart';
+import 'widgets/home_drawer.dart';
 import '../../data/repositories/user_repository.dart';
 import '../group/widgets/group_bible_map_tab.dart';
 
@@ -18,6 +19,7 @@ class HomeScreen extends ConsumerWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark, 
       child: Scaffold(
+        endDrawer: const HomeDrawer(),
         body: SafeArea(
           child: userProfileAsync.when(
             data: (user) {

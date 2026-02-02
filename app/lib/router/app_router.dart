@@ -10,6 +10,7 @@ import '../features/statistics/statistics_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/onboarding_screen.dart';
 import '../features/auth/create_church_screen.dart';
+import '../features/auth/profile_setup_screen.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/user_repository.dart'; // Import for user profile provider
 
@@ -26,19 +27,32 @@ final routerProvider = Provider<GoRouter>((ref) {
       
       final isLoginRoute = state.matchedLocation == '/login';
       final isOnboardingRoute = state.matchedLocation.startsWith('/onboarding');
+      final isProfileSetupRoute = state.matchedLocation == '/profile-setup';
 
       // 2. Unauthenticated User -> Login
       if (!isAuthenticated) {
         return isLoginRoute ? null : '/login';
       }
 
-      // 3. Authenticated User -> Check Profile for Church ID
+      // 3. Authenticated User -> Check Profile
       // If profile is still loading, wait (return null)
       if (userProfileAsync.isLoading) return null;
 
       final userProfile = userProfileAsync.value;
+
+      // Case A: Profile Setup Needed (Name is missing) -> Profile Setup
+      // Note: Position is optional, so we don't enforce it here to avoid infinite loops
+      final needsProfileSetup = userProfile != null && 
+          (userProfile.name == null || userProfile.name!.isEmpty);
+
+      if (needsProfileSetup) {
+        return isProfileSetupRoute ? null : '/profile-setup';
+      }
       
-      // Case A: No Church ID -> Onboarding
+      // Allow access to Profile Setup if navigating there (even if setup is complete, e.g. editing)
+      if (isProfileSetupRoute) return null;
+      
+      // Case B: No Church ID -> Onboarding
       if (userProfile == null || userProfile.churchId == null) {
         return isOnboardingRoute ? null : '/onboarding';
       }
@@ -56,6 +70,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/profile-setup',
+        builder: (context, state) => const ProfileSetupScreen(),
       ),
       GoRoute(
         path: '/onboarding',

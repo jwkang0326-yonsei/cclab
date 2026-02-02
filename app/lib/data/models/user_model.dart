@@ -6,6 +6,7 @@ class UserModel {
   final String? groupId;
   final String? groupStatus; // 'pending', 'active', 'rejected'
   final String role; // 'member', 'leader', 'admin'
+  final String? position; // 직책 (예: 목사, 장로, 성도)
 
   UserModel({
     required this.uid,
@@ -15,6 +16,7 @@ class UserModel {
     this.groupId,
     this.groupStatus,
     this.role = 'member',
+    this.position,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class UserModel {
       groupId: json['groupId'],
       groupStatus: json['groupStatus'],
       role: json['role'] ?? 'member',
+      position: json['position'],
     );
   }
 
@@ -38,6 +41,7 @@ class UserModel {
       'groupId': groupId,
       'groupStatus': groupStatus,
       'role': role,
+      'position': position,
     };
   }
 }
