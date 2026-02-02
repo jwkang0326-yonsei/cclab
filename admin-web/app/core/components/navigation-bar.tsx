@@ -79,7 +79,7 @@ function UserMenu({
       </DropdownMenuTrigger>
 
       {/* Dropdown content with user info and actions */}
-      <DropdownMenuContent className="w-56">
+      <DropdownMenuContent className="w-56" align="end">
         {/* User information display */}
         <DropdownMenuLabel className="grid flex-1 text-left text-sm leading-tight">
           <span className="truncate font-semibold">{name}</span>
