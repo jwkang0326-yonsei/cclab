@@ -239,7 +239,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    '함께 읽고, 함께 자라나는 말씀 숲',
+                    '말씀과 함께 걷는 믿음의 여정',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.secondary,
                     ),
@@ -250,7 +250,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextField(
                     controller: _emailController,
                     decoration: InputDecoration(
-                      hintText: '이메일',
+                      hintText: '이메일 주소',
                       prefixIcon: const Icon(Icons.email_outlined),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -268,14 +268,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 20),
                   _LoginButton(
-                    text: _isLoginMode ? '로그인' : '회원가입',
+                    text: _isLoginMode ? '로그인' : '회원가입하기',
                     backgroundColor: theme.colorScheme.primary,
                     textColor: Colors.white,
                     onPressed: _handleEmailAuth,
                   ),
                   TextButton(
                     onPressed: () => setState(() => _isLoginMode = !_isLoginMode),
-                    child: Text(_isLoginMode ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인'),
+                    child: Text(_isLoginMode ? '처음 오셨나요? 회원가입하기' : '이미 계정이 있으신가요? 로그인하기'),
                   ),
 
                   const Padding(
@@ -285,7 +285,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Expanded(child: Divider()),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 10),
-                          child: Text('또는 소셜 로그인', style: TextStyle(color: Colors.grey)),
+                          child: Text('또는 소셜 계정으로 계속하기', style: TextStyle(color: Colors.grey)),
                         ),
                         Expanded(child: Divider()),
                       ],
@@ -295,7 +295,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   // Social Logins
                   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) ...[
                     _LoginButton(
-                      text: 'Apple로 시작하기',
+                      text: 'Apple로 계속하기',
                       icon: Icons.apple,
                       backgroundColor: Colors.black,
                       textColor: Colors.white,
@@ -305,7 +305,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
 
                   _LoginButton(
-                    text: 'Google로 시작하기',
+                    text: 'Google로 계속하기',
                     icon: Icons.g_mobiledata,
                     backgroundColor: Colors.white,
                     textColor: Colors.black87,
@@ -315,7 +315,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 12),
 
                   _LoginButton(
-                    text: '카카오로 시작하기',
+                    text: '카카오로 계속하기',
                     icon: Icons.chat_bubble,
                     backgroundColor: const Color(0xFFFEE500),
                     textColor: const Color(0xFF191919),

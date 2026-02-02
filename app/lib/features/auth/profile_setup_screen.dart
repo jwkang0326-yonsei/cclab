@@ -93,13 +93,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('프로필 설정')),
+      appBar: AppBar(title: const Text('내 정보 완성하기')),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
             const Text(
-              '원활한 서비스 이용을 위해\n이름과 직책을 설정해주세요.',
+              '믿음의 여정을 시작하기 전,\n성도님을 간단히 소개해드려요.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
@@ -107,7 +107,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
-                labelText: '이름',
+                labelText: '성함',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person),
               ),
@@ -116,7 +116,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             TextField(
               controller: _positionController,
               decoration: const InputDecoration(
-                labelText: '직책 (선택)',
+                labelText: '교회에서의 직책 (선택)',
                 hintText: '예: 목사, 장로, 성도',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.badge),
@@ -130,7 +130,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 onPressed: _isLoading ? null : _saveProfile,
                 child: _isLoading 
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('저장하고 시작하기'),
+                    : const Text('여정 시작하기'),
               ),
             ),
           ],

@@ -76,7 +76,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('교회 연결'),
+        title: const Text('교회 선택하기'),
         leading: _showCodeInput 
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -115,7 +115,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          '어떻게 오셨나요?\n해당하는 항목을 선택해주세요.',
+          '함께 걸을 준비가 되셨나요?\n해당하는 항목을 선택해주세요.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: Colors.grey[600],
@@ -127,7 +127,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           theme: theme,
           icon: Icons.key_outlined,
           title: '초대 코드가 있어요',
-          subtitle: '교회에서 받은 코드를 입력하여 참여합니다.',
+          subtitle: '우리 교회에서 받은 코드를 입력해주세요.',
           onTap: () => setState(() => _showCodeInput = true),
           isPrimary: true,
         ),
@@ -135,8 +135,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _buildActionCard(
           theme: theme,
           icon: Icons.church_outlined,
-          title: '새로운 교회를 시작해요',
-          subtitle: '새로운 교회를 개척하고 관리자가 됩니다.',
+          title: '새로운 교회 등록하기',
+          subtitle: '위드바이블에 우리 교회를 새롭게 등록해요.',
           onTap: () => context.go('/onboarding/create-church'),
           isPrimary: false,
         ),
@@ -161,7 +161,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '교회에서 받은 코드를 입력하면\n자동으로 매칭됩니다.',
+            '코드를 입력하시면 해당 교회로\n자동 연결됩니다.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: Colors.grey[600],
             ),
@@ -171,8 +171,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           TextField(
             controller: _codeController,
             decoration: InputDecoration(
-              labelText: '초대 코드',
-              hintText: '예: CHANG1004',
+              labelText: '초대 코드 입력',
+              hintText: '예: WITHBIBLE12',
               errorText: _errorText,
               border: const OutlineInputBorder(),
               prefixIcon: const Icon(Icons.key),
@@ -192,7 +192,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     height: 24,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
-                : const Text('가입하기'),
+                : const Text('참여하기'),
           ),
           // Add extra padding at bottom for keyboard
           SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 20),
