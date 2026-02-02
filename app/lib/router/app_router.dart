@@ -53,7 +53,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isProfileSetupRoute) return null;
       
       // Case B: No Church ID -> Onboarding
-      if (userProfile == null || userProfile.churchId == null) {
+      // Only check if userProfile is LOADED but has no churchId.
+      // If userProfile is null, wait (it might be creating).
+      if (userProfile != null && userProfile.churchId == null) {
         return isOnboardingRoute ? null : '/onboarding';
       }
 
