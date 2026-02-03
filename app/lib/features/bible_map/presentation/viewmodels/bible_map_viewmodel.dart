@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../data/repositories/group_goal_repository.dart';
 import '../../../../data/models/group_map_state_model.dart';
 import '../../../../data/repositories/user_repository.dart';
-import '../../../../data/repositories/church_repository.dart'; // For firestoreProvider
 
 // Stream Provider for the State with User Name Sync
 final bibleMapStateProvider = StreamProvider.family<GroupMapStateModel, String>((ref, goalId) async* {
@@ -43,7 +42,7 @@ final bibleMapStateProvider = StreamProvider.family<GroupMapStateModel, String>(
       }
     }
 
-    // Update Display Names in UserStats (Create new UserStat objects)
+    // Update Display Names in UserStats (Create new UserMapStat objects)
     if (latestNames.isNotEmpty) {
       for (final entry in latestNames.entries) {
         final uid = entry.key;
@@ -52,9 +51,12 @@ final bibleMapStateProvider = StreamProvider.family<GroupMapStateModel, String>(
           final oldStat = userStats[uid]!;
           // Update displayName if changed
           if (oldStat.displayName != newName) {
-             userStats[uid] = UserStat(
+             userStats[uid] = UserMapStat(
+               userId: oldStat.userId,
                displayName: newName,
                clearedCount: oldStat.clearedCount,
+               lockedCount: oldStat.lockedCount,
+               lastActiveAt: oldStat.lastActiveAt,
              );
           }
         }

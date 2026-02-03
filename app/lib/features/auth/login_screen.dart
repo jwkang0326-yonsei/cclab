@@ -162,7 +162,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await _syncUserToFirestore(
           credential.user!.uid,
           email: credential.user!.email,
-          name: credential.user!.displayName ?? 'Apple User',
+          // name: null -> Force Profile Setup
           provider: 'apple',
         );
       }
@@ -181,7 +181,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await _syncUserToFirestore(
           credential.user!.uid,
           email: credential.user!.email,
-          name: credential.user!.displayName,
+          // name: null -> Force Profile Setup
           provider: 'google',
         );
       }
@@ -203,7 +203,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           await _syncUserToFirestore(
             cred.user!.uid,
             email: kakaoUser.kakaoAccount?.email ?? '',
-            name: kakaoUser.kakaoAccount?.profile?.nickname ?? 'Kakao User',
+            // name: null -> Force Profile Setup
             provider: 'kakao',
           );
         }
