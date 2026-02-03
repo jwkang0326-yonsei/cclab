@@ -38,19 +38,29 @@ class ChurchRepository {
     }
   }
 
+  Future<bool> checkInviteCodeAvailability(String code) async {
+    final querySnapshot = await _firestore
+        .collection('churches')
+        .where('invite_code', isEqualTo: code)
+        .limit(1)
+        .get();
+    return querySnapshot.docs.isEmpty;
+  }
+
   Future<ChurchModel> createChurch({
     required String name,
     required String adminId,
+    String? inviteCode,
   }) async {
     final docRef = _firestore.collection('churches').doc();
-    final inviteCode = _generateRandomInviteCode();
+    final code = inviteCode ?? _generateRandomInviteCode();
     
     final church = ChurchModel(
       id: docRef.id,
       name: name,
-      inviteCode: inviteCode,
+      inviteCode: code,
       adminId: adminId,
-      status: 'approved', // Test mode: auto-approve
+      status: 'approved',
       createdAt: DateTime.now(),
     );
 

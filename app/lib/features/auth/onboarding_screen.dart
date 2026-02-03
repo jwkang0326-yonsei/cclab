@@ -140,6 +140,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           onTap: () => context.go('/onboarding/create-church'),
           isPrimary: false,
         ),
+        const SizedBox(height: 32),
+        TextButton(
+          onPressed: () async {
+            final user = ref.read(authRepositoryProvider).currentUser;
+            if (user != null) {
+              // 'none' indicates the user explicitly skipped church selection
+              await ref.read(userRepositoryProvider).updateChurchId(user.uid, 'none');
+              // Router will detect churchId != null and redirect to Home
+            }
+          },
+          child: const Text(
+            '교회 없이 시작하기',
+            style: TextStyle(
+              color: Colors.grey,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
       ],
     );
   }

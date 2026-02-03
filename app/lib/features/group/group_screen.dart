@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart'; // For kIsWeb
 import '../../data/models/user_model.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../data/repositories/group_repository.dart';
+import '../home/widgets/home_drawer.dart';
 import 'viewmodels/group_view_model.dart';
 import 'widgets/group_create_bottom_sheet.dart';
 
@@ -22,6 +23,7 @@ class GroupScreen extends ConsumerWidget {
         if (user.groupId == null) {
           return Scaffold(
             appBar: AppBar(title: const Text('그룹')),
+            drawer: const HomeDrawer(),
             body: _buildNoGroupView(context, ref, user!),
           );
         }
@@ -29,6 +31,7 @@ class GroupScreen extends ConsumerWidget {
         if (user.groupStatus == 'pending') {
           return Scaffold(
             appBar: AppBar(title: const Text('그룹')),
+            drawer: const HomeDrawer(),
             body: _buildPendingView(context, user),
           );
         }
@@ -45,18 +48,6 @@ class GroupScreen extends ConsumerWidget {
           child: Scaffold(
             appBar: AppBar(
               title: const Text('그룹 관리'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.share),
-                  onPressed: () {
-                    final String baseUrl = kIsWeb 
-                        ? Uri.base.origin 
-                        : 'https://cclab-4ec42.firebaseapp.com';
-                    final inviteLink = '$baseUrl/invite/group/${user.groupId}';
-                    Share.share('우리 그룹에 초대합니다! 링크를 클릭해 가입하세요:\n$inviteLink');
-                  },
-                ),
-              ],
               bottom: TabBar(
                 labelColor: Colors.white,
                 unselectedLabelColor: Colors.white70,
@@ -67,11 +58,23 @@ class GroupScreen extends ConsumerWidget {
                 tabs: tabs,
               ),
             ),
+            drawer: const HomeDrawer(),
             body: TabBarView(
               children: [
                 _buildActiveMembersTab(ref, user.groupId!),
                 if (isLeader) _buildPendingMembersTab(ref, user.groupId!),
               ],
+            ),
+            floatingActionButton: FloatingActionButton.extended(
+              onPressed: () {
+                final String baseUrl = kIsWeb 
+                    ? Uri.base.origin 
+                    : 'https://cclab-4ec42.firebaseapp.com';
+                final inviteLink = '$baseUrl/invite/group/${user.groupId}';
+                Share.share('우리 그룹에 초대합니다! 링크를 클릭해 가입하세요:\n$inviteLink');
+              },
+              icon: const Icon(Icons.share),
+              label: const Text('초대하기'),
             ),
           ),
         );
@@ -82,33 +85,12 @@ class GroupScreen extends ConsumerWidget {
   }
 
   Widget _buildNoGroupView(BuildContext context, WidgetRef ref, UserModel user) {
-    // 1. If user has no church, show guidance to join church (or create group directly if allowed)
-    // Currently assuming users usually join church first via Invite Code.
-    if (user.churchId == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.church_outlined, size: 80, color: Colors.grey),
-            const SizedBox(height: 24),
-            const Text(
-              '아직 교회에 소속되지 않았습니다.',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '홈 화면의 설정이나 초대 코드를 통해\n교회에 먼저 가입해주세요.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-            // Optional: Button to go to onboarding or create church
-          ],
-        ),
-      );
-    }
+    // 교회 ID가 없거나 'none'인 경우도 허용 (그룹 생성 가능하도록)
+    final churchId = (user.churchId == null || user.churchId == 'none') ? 'none' : user.churchId!;
 
     // 2. Fetch Church Groups
-    final groupsAsync = ref.watch(churchGroupsProvider(user.churchId!));
+    // churchId가 'none'이면 빈 리스트를 반환하거나 'none'으로 생성된 그룹만 보여줌
+    final groupsAsync = ref.watch(churchGroupsProvider(churchId));
 
     return groupsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -128,12 +110,12 @@ class GroupScreen extends ConsumerWidget {
                       const Icon(Icons.group_off_outlined, size: 80, color: Colors.grey),
                       const SizedBox(height: 24),
                       const Text(
-                        '개설된 그룹이 없습니다.',
+                        '참여 가능한 그룹이 없습니다.',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        '첫 번째 그룹을 만들어보세요!',
+                        '직접 새로운 그룹을 만들어보세요!',
                         style: TextStyle(color: Colors.grey),
                       ),
                     ],
