@@ -1,11 +1,68 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../data/repositories/group_goal_repository.dart';
 import '../../../../data/models/group_map_state_model.dart';
 import '../../../../data/repositories/user_repository.dart';
+import '../../../../data/repositories/church_repository.dart'; // For firestoreProvider
 
-// Simple Stream Provider for the State
-final bibleMapStateProvider = StreamProvider.family<GroupMapStateModel, String>((ref, goalId) {
-  return ref.watch(groupGoalRepositoryProvider).watchMapState(goalId);
+// Stream Provider for the State with User Name Sync
+final bibleMapStateProvider = StreamProvider.family<GroupMapStateModel, String>((ref, goalId) async* {
+  final stream = ref.watch(groupGoalRepositoryProvider).watchMapState(goalId);
+  final firestore = ref.watch(firestoreProvider);
+
+  await for (final mapState in stream) {
+    // Collect User IDs
+    final userStats = mapState.stats.userStats;
+    if (userStats.isEmpty) {
+      yield mapState;
+      continue;
+    }
+
+    final userIds = userStats.keys.toList();
+    final Map<String, String> latestNames = {};
+
+    // Fetch latest names in chunks of 10
+    for (var i = 0; i < userIds.length; i += 10) {
+      final end = (i + 10 < userIds.length) ? i + 10 : userIds.length;
+      final chunk = userIds.sublist(i, end);
+
+      try {
+        final usersSnapshot = await firestore
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+
+        for (final doc in usersSnapshot.docs) {
+          final data = doc.data();
+          if (data['name'] != null && data['name'].toString().isNotEmpty) {
+            latestNames[doc.id] = data['name'];
+          }
+        }
+      } catch (e) {
+        print("Error fetching user names: $e");
+      }
+    }
+
+    // Update Display Names in UserStats (Create new UserStat objects)
+    if (latestNames.isNotEmpty) {
+      for (final entry in latestNames.entries) {
+        final uid = entry.key;
+        final newName = entry.value;
+        if (userStats.containsKey(uid)) {
+          final oldStat = userStats[uid]!;
+          // Update displayName if changed
+          if (oldStat.displayName != newName) {
+             userStats[uid] = UserStat(
+               displayName: newName,
+               clearedCount: oldStat.clearedCount,
+             );
+          }
+        }
+      }
+    }
+
+    yield mapState;
+  }
 });
 
 // We can keep the controller logic here or in UI. 
