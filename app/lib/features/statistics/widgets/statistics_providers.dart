@@ -183,15 +183,45 @@ final teamReadingStatsProvider = StreamProvider.family<TeamStatsData, String>((r
         final existing = memberStatsMap[userId]!;
         memberStatsMap[userId] = MemberStat(
           userId: userId,
-          displayName: existing.displayName,
+          displayName: existing.displayName, // 임시 이름 (나중에 최신 정보로 업데이트)
           clearedCount: existing.clearedCount + userStat.clearedCount,
         );
       } else {
         memberStatsMap[userId] = MemberStat(
           userId: userId,
-          displayName: userStat.displayName,
+          displayName: userStat.displayName, // 임시 이름
           clearedCount: userStat.clearedCount,
         );
+      }
+    }
+  }
+
+  // 최신 유저 정보 조회 및 이름 업데이트
+  if (memberStatsMap.isNotEmpty) {
+    final userIds = memberStatsMap.keys.toList();
+    // Firestore whereIn 쿼리는 최대 10개까지만 가능하므로 청크로 나누어 처리
+    for (var i = 0; i < userIds.length; i += 10) {
+      final end = (i + 10 < userIds.length) ? i + 10 : userIds.length;
+      final chunk = userIds.sublist(i, end);
+      
+      final usersSnapshot = await firestore
+          .collection('users')
+          .where(FieldPath.documentId, whereIn: chunk)
+          .get();
+
+      for (final userDoc in usersSnapshot.docs) {
+        final userData = userDoc.data();
+        final userId = userDoc.id;
+        final latestName = userData['name'] as String?;
+        
+        if (latestName != null && latestName.isNotEmpty && memberStatsMap.containsKey(userId)) {
+          final oldStat = memberStatsMap[userId]!;
+          memberStatsMap[userId] = MemberStat(
+            userId: userId,
+            displayName: latestName,
+            clearedCount: oldStat.clearedCount,
+          );
+        }
       }
     }
   }
