@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../data/repositories/auth_repository.dart';
 
@@ -132,7 +133,25 @@ class HomeDrawer extends ConsumerWidget {
               );
             },
           ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
+          const SizedBox(height: 10),
+          FutureBuilder<PackageInfo>(
+            future: PackageInfo.fromPlatform(),
+            builder: (context, snapshot) {
+              final version = snapshot.data?.version ?? '0.0.0';
+              final buildNumber = snapshot.data?.buildNumber ?? '0';
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'v$version+$buildNumber | 2026-02-03 배포',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              );
+            },
+          ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 10),
         ],
       ),
     );
