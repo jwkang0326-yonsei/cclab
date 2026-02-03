@@ -34,7 +34,7 @@ class StatisticsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          drawer: const HomeDrawer(),
+          endDrawer: const HomeDrawer(),
           body: const TabBarView(
             children: [
               MyStatisticsTab(),

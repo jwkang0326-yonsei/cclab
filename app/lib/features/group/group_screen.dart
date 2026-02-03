@@ -23,7 +23,7 @@ class GroupScreen extends ConsumerWidget {
         if (user.groupId == null) {
           return Scaffold(
             appBar: AppBar(title: const Text('그룹')),
-            drawer: const HomeDrawer(),
+            endDrawer: const HomeDrawer(),
             body: _buildNoGroupView(context, ref, user!),
           );
         }
@@ -31,7 +31,7 @@ class GroupScreen extends ConsumerWidget {
         if (user.groupStatus == 'pending') {
           return Scaffold(
             appBar: AppBar(title: const Text('그룹')),
-            drawer: const HomeDrawer(),
+            endDrawer: const HomeDrawer(),
             body: _buildPendingView(context, user),
           );
         }
@@ -58,7 +58,7 @@ class GroupScreen extends ConsumerWidget {
                 tabs: tabs,
               ),
             ),
-            drawer: const HomeDrawer(),
+            endDrawer: const HomeDrawer(),
             body: TabBarView(
               children: [
                 _buildActiveMembersTab(ref, user.groupId!),
