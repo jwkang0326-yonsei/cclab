@@ -102,12 +102,121 @@
 *   [x] Leader can see pending requests and approve/reject them.
 *   [x] Leader can promote a member to admin.
 
-## 4. Progress & Notes (진행 상황 및 노트)
-*   **Status**: Completed
-*   **Last Updated**: 2026-01-19
+---
 
-### Learnings & Issues
+### Phase 5: Multi-Group Data Layer (다중 그룹 데이터 레이어)
+*   **Goal**: 한 사용자가 여러 그룹에 소속될 수 있도록 데이터 모델 변경.
+*   **Test Strategy**: Unit Test (마이그레이션 로직, 새 Repository 메서드).
+*   **Rollback**: `group_memberships` 서브컬렉션 삭제, `groupId` 필드 복원.
+
+#### Data Model Changes
+*   **기존**: `UserModel.groupId` (단일 그룹 ID)
+*   **변경**: `users/{userId}/group_memberships/{groupId}` 서브컬렉션
+    ```
+    group_memberships/{groupId} {
+      groupId: string
+      role: 'leader' | 'admin' | 'member'
+      status: 'pending' | 'active'
+      joinedAt: Timestamp
+    }
+    ```
+
+#### Tasks
+*   [x] 🔴 **RED**: Write tests for `GroupMembershipRepository` (getMyGroups, joinGroup, leaveGroup).
+*   [x] 🟢 **GREEN**: Create `GroupMembershipModel`.
+*   [x] 🟢 **GREEN**: Implement `GroupMembershipRepository`.
+*   [ ] 🟢 **GREEN**: Create migration script (기존 `groupId` → `group_memberships` 변환).
+*   [ ] 🔵 **REFACTOR**: Update Firestore security rules.
+*   [ ] 📝 Update documentation.
+
+#### Quality Gate
+*   [ ] Build Success.
+*   [ ] Unit Tests Pass.
+*   [ ] 기존 사용자 데이터 마이그레이션 완료.
+
+---
+
+### Phase 6: Group Selection Screen (그룹 선택 화면)
+*   **Goal**: 다중 그룹 사용자를 위한 그룹 선택 화면 구현.
+*   **Test Strategy**: Widget Test (그룹 목록 표시, 선택 동작).
+
+#### UX Flow
+```
+앱 실행 → 그룹 수 확인
+  ├─ 그룹 0개: 그룹 생성/가입 안내 화면
+  ├─ 그룹 1개: 바로 홈 화면 진입
+  └─ 그룹 2개+: 그룹 선택 화면 표시 (마지막 접속 그룹 하이라이트)
+```
+
+#### Tasks
+*   [ ] 🔴 **RED**: Write tests for `GroupSelectionScreen`.
+*   [x] 🟢 **GREEN**: Implement `GroupSelectionViewModel` (내 그룹 목록 조회).
+*   [x] 🟢 **GREEN**: Implement `GroupSelectionScreen` UI.
+*   [x] 🟢 **GREEN**: Add `lastGroupId` 로컬 저장 (SharedPreferences).
+*   [x] 🟢 **GREEN**: Update `AppRouter` (그룹 선택 라우트 추가).
+*   [ ] 🔵 **REFACTOR**: 그룹 1개일 때 선택 화면 스킵 로직.
+*   [ ] 📝 Update documentation.
+
+#### Quality Gate
+*   [ ] Build Success.
+*   [ ] 그룹 2개 이상 사용자가 그룹 선택 화면을 볼 수 있음.
+*   [ ] 마지막 접속 그룹이 하이라이트됨.
+
+---
+
+### Phase 7: Home Screen Group Integration (홈 화면 그룹 통합)
+*   **Goal**: 홈 화면에서 현재 그룹 컨텍스트 표시 및 그룹 전환 기능.
+*   **Test Strategy**: Widget Test (그룹 배지, 전환 동작), Integration Test.
+
+#### UI Changes
+*   홈 화면 상단에 **현재 그룹 배지** 표시
+*   배지 탭 → 그룹 선택 화면으로 전환 (또는 Bottom Sheet)
+*   모든 데이터(목표, 성경 읽기 진행률) → 선택된 그룹 컨텍스트 기준
+
+#### Tasks
+*   [ ] 🔴 **RED**: Write tests for group context in `HomeScreen`.
+*   [ ] 🟢 **GREEN**: Update `HomeViewModel` to accept `groupId` parameter.
+*   [x] 🟢 **GREEN**: Add group badge widget to `HomeScreen` header (`_GroupBadge`).
+*   [x] 🟢 **GREEN**: Implement group switch navigation (tap → `/group-selection`).
+*   [ ] 🟢 **GREEN**: Update `GroupScreen` to show group list (내가 속한 그룹들).
+*   [ ] 🔵 **REFACTOR**: 기존 `GroupScreen` 리팩토링 (단일 그룹 → 그룹 목록).
+*   [x] 🟢 **GREEN**: Debug infinite loading issue in `GroupSelectionViewModel`.
+*   [ ] 📝 Update documentation.
+
+#### Quality Gate
+*   [ ] Build Success.
+*   [ ] 홈 화면에서 현재 그룹 확인 가능.
+*   [ ] 그룹 전환 시 데이터가 올바르게 변경됨.
+
+---
+
+## 5. Verification Plan (검증 계획)
+
+### Automated Tests
+*   `flutter test` - 전체 유닛/위젯 테스트 실행
+*   `GroupMembershipRepository` 테스트: 그룹 가입/탈퇴/조회 로직
+*   `GroupSelectionScreen` 테스트: 그룹 목록 렌더링, 선택 동작
+
+### Manual Verification
+1. 테스트 계정으로 2개 이상 그룹에 가입
+2. 앱 재실행 시 그룹 선택 화면 표시 확인
+3. 그룹 선택 후 홈 화면에 해당 그룹 목표 표시 확인
+4. 홈 화면 그룹 배지 탭 → 그룹 전환 동작 확인
+
+---
+
+## 6. Progress & Notes (진행 상황 및 노트)
+*   **Status**: Phase 1-4 Completed, Phase 5-7 Planning
+*   **Last Updated**: 2026-02-04
+
+### Phase 1-4 Learnings & Issues
 *   **Mock Generation**: `build_runner` with transitive dependencies required adding it as a direct dev dependency.
 *   **Riverpod**: `StateNotifier` requires explicit import or `state_notifier` package in some contexts. Using `Notifier` is a more modern alternative.
 *   **Testing**: Proper relative imports are crucial for Flutter tests to resolve packages correctly.
 *   **Group Admin**: Added `groupStatus` to `UserModel` to handle pending requests efficiently.
+
+### Phase 5-7 Design Decisions
+*   **데이터 구조**: `group_memberships` 서브컬렉션 방식 채택 (쿼리 유연성).
+*   **UX 흐름**: 그룹 1개면 스킵, 2개+ 면 선택 화면 표시.
+*   **마지막 접속 그룹**: `SharedPreferences`에 `lastGroupId` 저장.
+*   **홈 화면**: 그룹 배지 + 탭하여 전환 방식.

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/common/main_layout.dart';
 import '../features/home/home_screen.dart';
 import '../features/group/group_screen.dart'; // Import real GroupScreen
+import '../features/group/group_selection_screen.dart'; // 그룹 선택 화면
 import '../features/group/join_group_screen.dart';
 import '../features/bible_map/presentation/pages/create_goal_screen.dart';
 import '../features/bible_map/presentation/pages/bible_map_screen.dart';
@@ -28,6 +29,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoginRoute = state.matchedLocation == '/login';
       final isOnboardingRoute = state.matchedLocation.startsWith('/onboarding');
       final isProfileSetupRoute = state.matchedLocation == '/profile-setup';
+      final isGroupSelectionRoute = state.matchedLocation == '/group-selection';
 
       // 2. Unauthenticated User -> Login
       if (!isAuthenticated) {
@@ -64,6 +66,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isLoginRoute || isOnboardingRoute) {
         return '/home';
       }
+      
+      // 그룹 선택 화면은 별도 처리 (Phase 7에서 자동 분기 추가)
+      if (isGroupSelectionRoute) return null;
 
       // Allow other routes
       return null;
@@ -86,6 +91,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const CreateChurchScreen(),
           ),
         ],
+      ),
+      // 그룹 선택 화면 (다중 그룹 사용자용)
+      GoRoute(
+        path: '/group-selection',
+        builder: (context, state) => const GroupSelectionScreen(),
       ),
       GoRoute(
         path: '/invite/group/:groupId',

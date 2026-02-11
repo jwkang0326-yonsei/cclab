@@ -8,7 +8,7 @@ import { cn } from "~/core/lib/utils";
 
 // TODO: 아래 상수들을 실제 앱 정보로 변경해주세요.
 const APP_SCHEME = "omp-camera://"; // 앱의 커스텀 URL 스킴
-const ANDROID_PACKAGE_NAME = "com.ohmyplay.camera"; // 안드로이드 패키지명
+const ANDROID_PACKAGE_NAME = "com.ohmyplay.tnmt.camera"; // 안드로이드 패키지명
 const APP_STORE_ID = "123456789"; // 애플 앱스토어 ID
 
 const APP_STORE_URL = `https://apps.apple.com/app/id${APP_STORE_ID}`;

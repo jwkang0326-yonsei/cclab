@@ -25,9 +25,9 @@ class StatisticsScreen extends ConsumerWidget {
               ),
             ),
             bottom: TabBar(
-              labelColor: Theme.of(context).colorScheme.primary,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Theme.of(context).colorScheme.primary,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              indicatorColor: Colors.white,
               tabs: const [
                 Tab(text: '나의 통계'),
                 Tab(text: '팀 통계'),

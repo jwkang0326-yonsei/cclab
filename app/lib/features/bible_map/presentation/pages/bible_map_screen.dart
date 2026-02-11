@@ -8,6 +8,7 @@ import '../../../../data/models/group_goal_model.dart';
 import '../../../../data/repositories/group_goal_repository.dart';
 import '../../../../data/repositories/user_repository.dart';
 import '../../../../core/constants/bible_constants.dart';
+import '../widgets/bible_gacha_dialog.dart';
 
 // Provider to fetch Goal Details
 final goalDetailsProvider = FutureProvider.family<GroupGoalModel?, String>((ref, goalId) async {
@@ -109,6 +110,48 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
             ),
           )
         : null,
+      floatingActionButton: _isSelectionMode ? null : mapStateAsync.when(
+        data: (mapState) {
+          final openChapters = mapState.chapters.entries
+              .where((e) => e.value.status == 'OPEN')
+              .map((e) => e.key)
+              .toList();
+          
+          if (openChapters.isEmpty) return null;
+
+          return FloatingActionButton.extended(
+            onPressed: () => _showGacha(context, openChapters),
+            backgroundColor: Colors.orange[800],
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.Casino),
+            label: const Text("말씀 뽑기", style: TextStyle(fontWeight: FontWeight.bold)),
+          );
+        },
+        loading: () => null,
+        error: (_, __) => null,
+      ),
+    );
+  }
+
+  void _showGacha(BuildContext context, List<String> openChapters) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => BibleGachaDialog(
+        openChapterKeys: openChapters,
+        onConfirm: (key) {
+          ref.read(bibleMapControllerProvider).lockChapters(
+            goalId: widget.goalId,
+            chapterKeys: [key],
+          ).then((_) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("뽑은 말씀을 예약했습니다. 화이팅!")),
+              );
+            }
+          });
+        },
+      ),
     );
   }
 

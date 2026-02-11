@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../data/repositories/church_repository.dart';
 import '../../../data/repositories/group_repository.dart';
-import '../../../data/repositories/auth_repository.dart';
 
 import 'package:go_router/go_router.dart';
 
@@ -134,10 +133,57 @@ class _ChurchGroupInfo extends ConsumerWidget {
             if (church != null)
               _InfoBadge(icon: Icons.church, text: church.name),
             if (group != null)
-              _InfoBadge(icon: Icons.people, text: group.name),
+              _GroupBadge(groupName: group.name),
           ],
         );
       },
+    );
+  }
+}
+
+/// 그룹 배지 - 탭 시 그룹 선택 화면으로 이동
+class _GroupBadge extends StatelessWidget {
+  final String groupName;
+
+  const _GroupBadge({required this.groupName});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return InkWell(
+      onTap: () {
+        // 그룹 선택 화면으로 이동
+        context.push('/group-selection');
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: theme.colorScheme.primary.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.people, size: 14, color: theme.colorScheme.primary),
+            const SizedBox(width: 6),
+            Text(
+              groupName,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.swap_horiz, size: 12, color: theme.colorScheme.primary),
+          ],
+        ),
+      ),
     );
   }
 }

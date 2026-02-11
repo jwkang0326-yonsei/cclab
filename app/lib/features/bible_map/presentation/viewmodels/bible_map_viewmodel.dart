@@ -157,25 +157,38 @@ class BibleMapController {
     }
   }
 
-  Future<void> toggleCollaborativeCompletion({
-    required String goalId,
-    required String book,
-    required int chapter,
-  }) async {
-    final key = "${book}_$chapter";
-    try {
-      final user = _ref.read(currentUserProfileProvider).value;
-      if (user == null) throw Exception("User not logged in");
-
-      await _ref.read(groupGoalRepositoryProvider).toggleCollaborativeChapterCompletion(
-        goalId: goalId,
-        chapterKey: key,
-        userId: user.uid,
-        userName: user.name ?? "Anonymous",
-      );
-    } catch (e) {
-      print("Collaborative Toggle Error: $e");
-      rethrow;
+    Future<void> toggleCollaborativeCompletion({
+      required String goalId,
+      required String book,
+      required int chapter,
+    }) async {
+      final key = "${book}_$chapter";
+      try {
+        final user = _ref.read(currentUserProfileProvider).value;
+        if (user == null) throw Exception("User not logged in");
+  
+        await _ref.read(groupGoalRepositoryProvider).toggleCollaborativeChapterCompletion(
+          goalId: goalId, 
+          chapterKey: key, 
+          userId: user.uid, 
+          userName: user.name ?? "Anonymous",
+        );
+      } catch (e) {
+        print("Collaborative Toggle Error: $e");
+        rethrow;
+      }
+    }
+  
+    // --- Gacha Logic ---
+    String? pickRandomChapterKey(GroupMapStateModel mapState) {
+      final openChapters = mapState.chapters.entries
+          .where((e) => e.value.status == 'OPEN')
+          .map((e) => e.key)
+          .toList();
+  
+      if (openChapters.isEmpty) return null;
+  
+      openChapters.shuffle();
+      return openChapters.first;
     }
   }
-}
