@@ -329,7 +329,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) return const SizedBox.shrink();
                       return Text(
-                        'v${snapshot.data!.version}+${snapshot.data!.buildNumber} | 2026-02-03 배포',
+                        'v${snapshot.data!.version}+${snapshot.data!.buildNumber} | 2026-02-11 배포',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
                         ),

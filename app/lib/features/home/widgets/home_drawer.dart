@@ -142,7 +142,7 @@ class HomeDrawer extends ConsumerWidget {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'v$version+$buildNumber | 2026-02-03 배포',
+                  'v$version+$buildNumber | 2026-02-11 배포',
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.grey[500],

@@ -119,7 +119,7 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
                 width: 300,
                 height: 300,
                 decoration: BoxDecoration(
-                  shape: BoxType.circle,
+                  shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.amber.withOpacity(0.3 * (1 - _glowController.value)),
@@ -167,10 +167,10 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.orange[50],
-                      shape: BoxType.circle,
+                      shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      _isSpinning ? Icons.Casino : Icons.menu_book,
+                      _isSpinning ? Icons.casino : Icons.menu_book,
                       size: 80,
                       color: Colors.orange[800],
                     ),

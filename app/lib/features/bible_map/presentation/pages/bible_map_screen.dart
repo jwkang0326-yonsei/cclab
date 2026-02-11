@@ -123,7 +123,7 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
             onPressed: () => _showGacha(context, openChapters),
             backgroundColor: Colors.orange[800],
             foregroundColor: Colors.white,
-            icon: const Icon(Icons.Casino),
+            icon: const Icon(Icons.casino),
             label: const Text("말씀 뽑기", style: TextStyle(fontWeight: FontWeight.bold)),
           );
         },
