@@ -60,7 +60,8 @@ jobs:
 
       - name: Build APK
         run: |
-          flutter pub get
+          flutter clean
+          flutter pub get -v
           flutter build apk --release --build-number=${GITHUB_RUN_NUMBER}
 
       - name: Distribute to Firebase
