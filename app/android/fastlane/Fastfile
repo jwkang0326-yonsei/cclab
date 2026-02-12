@@ -13,4 +13,15 @@ platform :android do
       skip_submission: true # Just upload, don't submit for review automatically
     )
   end
+
+  desc "Distribute a new build to Firebase App Distribution"
+  lane :firebase_dist do |options|
+    firebase_app_distribution(
+      app: "1:983598640244:android:60548d0ada68f95c9bb521",
+      apk_path: "../build/app/outputs/flutter-apk/app-release.apk",
+      service_credentials_file: "service-account.json",
+      groups: "testers",
+      release_notes: options[:notes] || "Manual build"
+    )
+  end
 end

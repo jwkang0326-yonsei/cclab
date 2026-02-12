@@ -1,23 +1,55 @@
 default_platform(:ios)
 
 platform :ios do
+  before_all do
+    # App Store Connect API Key setup for all lanes
+    if ENV["APP_STORE_CONNECT_API_KEY_KEY"]
+      app_store_connect_api_key(
+        key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
+        issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+        key_content: ENV["APP_STORE_CONNECT_API_KEY_KEY"],
+        is_key_content_base64: false # Secrets are usually raw text if copied directly
+      )
+    end
+  end
+
   desc "Push a new beta build to TestFlight"
   lane :beta do
-    # Ensure the git status is clean
     ensure_git_status_clean
-
-    # Increment build number (requires enabling Apple Generic Versioning in Xcode)
-    # increment_build_number(xcodeproj: "Runner.xcodeproj")
-
-    # Sync certificates and profiles (Read-only for CI/CD usually, but can be used locally)
-    # match(type: "appstore", readonly: true)
+    
+    # Sync certificates
+    match(type: "appstore", readonly: ENV["CI"])
 
     # Build the application
-    build_app(workspace: "Runner.xcworkspace", scheme: "Runner")
+    build_app(
+      workspace: "Runner.xcworkspace", 
+      scheme: "Runner",
+      export_method: "app-store"
+    )
 
     # Upload to TestFlight
     upload_to_testflight(
       skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "Distribute a new build to Firebase App Distribution"
+  lane :firebase_dist do |options|
+    # Sync adhoc certificates for Firebase
+    match(type: "adhoc", readonly: ENV["CI"])
+
+    # Build the application for adhoc distribution
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "ad-hoc"
+    )
+
+    # Upload to Firebase
+    firebase_app_distribution(
+      app: "1:983598640244:ios:38a0ead3b4ba7fb59bb521",
+      groups: "testers",
+      release_notes: options[:notes] || "Manual iOS build"
     )
   end
 end

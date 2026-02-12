@@ -1,0 +1,50 @@
+name: iOS Development Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy_firebase_ios:
+    name: Build & Distribute iOS to Firebase
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: ./app/ios
+
+      - name: Install Dependencies
+        run: |
+          flutter pub get
+          cd ios
+          pod install
+
+      - name: Install Fastlane Plugins
+        working-directory: ./app/ios
+        run: bundle exec fastlane install_plugins
+
+      - name: Distribute to Firebase
+        working-directory: ./app/ios
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+        run: |
+          bundle exec fastlane firebase_dist notes:"Auto-deploy iOS from GitHub Actions (Run: ${GITHUB_RUN_NUMBER})"

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../lib/router/app_router.dart';
-import '../../lib/data/repositories/auth_repository.dart';
-import '../../lib/data/repositories/user_repository.dart';
-import '../../lib/data/models/user_model.dart';
+import 'package:with_bible/router/app_router.dart';
+import 'package:with_bible/data/repositories/auth_repository.dart';
+import 'package:with_bible/data/repositories/user_repository.dart';
+import 'package:with_bible/data/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mockito/mockito.dart';
 

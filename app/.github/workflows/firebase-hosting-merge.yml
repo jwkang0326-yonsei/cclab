@@ -19,4 +19,5 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}'
           channelId: live
+          target: app-dev
           projectId: cclab-4ec42

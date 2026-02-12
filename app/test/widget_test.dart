@@ -15,7 +15,7 @@ class MockUser extends Mock implements User {
 void main() {
   testWidgets('Initial initialization test', (WidgetTester tester) async {
     final mockUser = MockUser();
-    const tUser = UserModel(
+    final tUser = UserModel(
       uid: 'test-uid',
       email: 'test@example.com',
       name: 'Test',

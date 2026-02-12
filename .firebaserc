@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "cclab-4ec42"
+  },
+  "targets": {
+    "cclab-4ec42": {
+      "hosting": {
+        "app-prod": [
+          "cclab-4ec42"
+        ],
+        "app-dev": [
+          "cclab-dev-app"
+        ]
+      }
+    }
+  }
+}

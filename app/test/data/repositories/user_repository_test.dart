@@ -29,7 +29,7 @@ void main() {
 
   group('UserRepository', () {
     const tUid = 'test-uid';
-    const tUser = UserModel(
+    final tUser = UserModel(
       uid: tUid,
       email: 'test@example.com',
       name: 'Test User',

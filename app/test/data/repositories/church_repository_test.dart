@@ -31,10 +31,13 @@ void main() {
 
   group('ChurchRepository', () {
     const tCode = 'TEST1234';
-    const tChurch = ChurchModel(
+    final tChurch = ChurchModel(
       id: 'church-1',
       name: 'Test Church',
       inviteCode: tCode,
+      adminId: 'admin-1',
+      createdAt: DateTime(2024, 1, 1),
+      status: 'approved',
     );
 
     test('verifyCode should return ChurchModel if code exists', () async {

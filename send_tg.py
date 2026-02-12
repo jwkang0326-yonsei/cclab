@@ -29,10 +29,13 @@ def load_env():
 
     return env_vars
 
-def send_message(message):
+def send_message(message, chat_id=None):
     env = load_env()
     token = env.get('GEMINI_BOT_TOKEN') or os.environ.get('GEMINI_BOT_TOKEN')
-    chat_id = env.get('ALLOWED_USER_ID') or os.environ.get('ALLOWED_USER_ID')
+    
+    # chat_id가 인자로 전달되지 않은 경우에만 .env에서 가져옴
+    if chat_id is None:
+        chat_id = env.get('ALLOWED_USER_ID') or os.environ.get('ALLOWED_USER_ID')
 
     if not token or not chat_id:
         print("Error: .env 파일 또는 환경 변수에 GEMINI_BOT_TOKEN과 ALLOWED_USER_ID가 설정되지 않았습니다.")

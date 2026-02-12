@@ -1,9 +1,9 @@
-git_url("TODO_ENTER_YOUR_GIT_URL") # URL of the git repo for the certificates
+git_url("https://github.com/jwkang0326-yonsei/cclab_private.git")
 storage_mode("git")
-type("appstore") # The default type, can be: appstore, adhoc, enterprise or development
+type("appstore") # The default type
 
-# app_identifier(["org.cclab.withbible"])
-# username("user@fastlane.tools") # Your Apple Developer Portal username
+app_identifier(["org.cclab.withbible"])
+# username("your-apple-id@email.com") # Optional if using API Key
 
 # For all available options run `fastlane match --help`
 # Remove the # in the beginning of the line to enable the other options

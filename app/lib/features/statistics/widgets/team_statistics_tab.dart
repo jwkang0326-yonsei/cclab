@@ -168,16 +168,27 @@ class _TeamStatisticsContent extends ConsumerWidget {
               ),
             )
           else
-            ...stats.memberStats.asMap().entries.map((entry) {
-              final index = entry.key;
-              final member = entry.value;
-              return _MemberRankCard(
-                rank: index + 1,
-                name: member.displayName,
-                chaptersRead: member.clearedCount,
-                isTopThree: index < 3,
-              );
-            }),
+            ...(() {
+              int displayRank = 0;
+              int? prevClearedCount;
+
+              return stats.memberStats.asMap().entries.map((entry) {
+                final index = entry.key;
+                final member = entry.value;
+
+                if (prevClearedCount != member.clearedCount) {
+                  displayRank = index + 1;
+                  prevClearedCount = member.clearedCount;
+                }
+
+                return _MemberRankCard(
+                  rank: displayRank,
+                  name: member.displayName,
+                  chaptersRead: member.clearedCount,
+                  isTopThree: displayRank <= 3,
+                );
+              });
+            })(),
           const SizedBox(height: 50),
         ],
       ),

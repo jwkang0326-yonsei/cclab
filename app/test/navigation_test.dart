@@ -18,7 +18,7 @@ void main() {
     final mockUser = MockUser();
     
     // Create a mock user model with churchId (to pass redirect check)
-    const tUser = UserModel(
+    final tUser = UserModel(
       uid: 'test-uid',
       email: 'test@example.com',
       name: 'Test',

@@ -10,6 +10,7 @@ import 'package:mockito/src/dummies.dart' as _i5;
 import 'package:with_bible/data/models/group_model.dart' as _i4;
 import 'package:with_bible/data/models/user_model.dart' as _i6;
 import 'package:with_bible/data/repositories/group_repository.dart' as _i2;
+import 'package:with_bible/data/repositories/user_repository.dart' as _i7;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -86,6 +87,20 @@ class MockGroupRepository extends _i1.Mock implements _i2.GroupRepository {
           as _i3.Future<List<_i6.UserModel>>);
 
   @override
+  _i3.Stream<List<_i6.UserModel>> getMembersStream({
+    required String? groupId,
+    String? status,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#getMembersStream, [], {
+              #groupId: groupId,
+              #status: status,
+            }),
+            returnValue: _i3.Stream<List<_i6.UserModel>>.empty(),
+          )
+          as _i3.Stream<List<_i6.UserModel>>);
+
+  @override
   _i3.Future<void> updateMemberStatus({
     required String? userId,
     required String? status,
@@ -101,6 +116,21 @@ class MockGroupRepository extends _i1.Mock implements _i2.GroupRepository {
           as _i3.Future<void>);
 
   @override
+  _i3.Future<void> approveMember({
+    required String? userId,
+    required String? groupId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#approveMember, [], {
+              #userId: userId,
+              #groupId: groupId,
+            }),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
   _i3.Future<List<_i4.GroupModel>> getGroupsByChurch(String? churchId) =>
       (super.noSuchMethod(
             Invocation.method(#getGroupsByChurch, [churchId]),
@@ -109,4 +139,78 @@ class MockGroupRepository extends _i1.Mock implements _i2.GroupRepository {
             ),
           )
           as _i3.Future<List<_i4.GroupModel>>);
+}
+
+/// A class which mocks [UserRepository].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockUserRepository extends _i1.Mock implements _i7.UserRepository {
+  MockUserRepository() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i3.Future<void> createUser(_i6.UserModel? user) =>
+      (super.noSuchMethod(
+            Invocation.method(#createUser, [user]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> deleteUser(String? uid) =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteUser, [uid]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> updateChurchId(String? uid, String? churchId) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateChurchId, [uid, churchId]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> updateGroupId(
+    String? uid,
+    String? groupId,
+    String? status,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateGroupId, [uid, groupId, status]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> updateUserRole(String? uid, String? role) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateUserRole, [uid, role]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<_i6.UserModel?> getUser(String? uid) =>
+      (super.noSuchMethod(
+            Invocation.method(#getUser, [uid]),
+            returnValue: _i3.Future<_i6.UserModel?>.value(),
+          )
+          as _i3.Future<_i6.UserModel?>);
+
+  @override
+  _i3.Stream<_i6.UserModel?> watchUser(String? uid) =>
+      (super.noSuchMethod(
+            Invocation.method(#watchUser, [uid]),
+            returnValue: _i3.Stream<_i6.UserModel?>.empty(),
+          )
+          as _i3.Stream<_i6.UserModel?>);
 }
