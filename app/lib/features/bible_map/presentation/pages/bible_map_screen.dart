@@ -110,43 +110,76 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
             ),
           )
         : null,
-      floatingActionButton: _isSelectionMode ? null : mapStateAsync.when(
-        data: (mapState) {
-          final openChapters = mapState.chapters.entries
-              .where((e) => e.value.status == 'OPEN')
-              .map((e) => e.key)
-              .toList();
-          
-          if (openChapters.isEmpty) return null;
+      floatingActionButton: _isSelectionMode ? null : FloatingActionButton.extended(
+        onPressed: mapStateAsync.maybeWhen(
+          data: (mapState) {
+            final goal = goalAsync.value;
+            if (goal == null) return null;
 
-          return FloatingActionButton.extended(
-            onPressed: () => _showGacha(context, openChapters),
-            backgroundColor: Colors.orange[800],
-            foregroundColor: Colors.white,
-            icon: const Icon(Icons.casino),
-            label: const Text("말씀 뽑기", style: TextStyle(fontWeight: FontWeight.bold)),
-          );
-        },
-        loading: () => null,
-        error: (_, __) => null,
+            return () {
+              // 1. Get filtered books for the goal range
+              final filteredBooks = _getFilteredBooks(goal.targetRange);
+
+              // 2. Find books that have at least one OPEN chapter
+              final List<Map<String, dynamic>> availableBooks = [];
+              
+              for (final book in filteredBooks) {
+                final bookKey = book['key'];
+                final count = book['chapters'];
+                bool hasOpenChapter = false;
+
+                for (int i = 1; i <= count; i++) {
+                  final chapterKey = "${bookKey}_$i";
+                  final status = mapState.chapters[chapterKey];
+                  if (status == null || status.status == 'OPEN') {
+                    hasOpenChapter = true;
+                    break;
+                  }
+                }
+
+                if (hasOpenChapter) {
+                  availableBooks.add(book);
+                }
+              }
+              
+              if (availableBooks.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("이미 모든 성경 말씀의 주인이 정해졌습니다! 성도님들과 함께 기쁨으로 완독해볼까요?"),
+                    backgroundColor: Colors.blueAccent,
+                  ),
+                );
+                return;
+              }
+
+              _showGacha(context, availableBooks);
+            };
+          },
+          orElse: () => null,
+        ),
+        backgroundColor: Colors.orange[800],
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.casino),
+        label: const Text("말씀 뽑기", style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
 
-  void _showGacha(BuildContext context, List<String> openChapters) {
+  void _showGacha(BuildContext context, List<Map<String, dynamic>> availableBooks) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => BibleGachaDialog(
-        openChapterKeys: openChapters,
-        onConfirm: (key) {
-          ref.read(bibleMapControllerProvider).lockChapters(
+        availableBooks: availableBooks,
+        onConfirm: (book) {
+          ref.read(bibleMapControllerProvider).lockWholeBook(
             goalId: widget.goalId,
-            chapterKeys: [key],
+            bookKey: book['key'],
+            chapterCount: book['chapters'],
           ).then((_) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("뽑은 말씀을 예약했습니다. 화이팅!")),
+                SnackBar(content: Text("뽑으신 ${book['name']} 전체를 예약했습니다. 화이팅!")),
               );
             }
           });

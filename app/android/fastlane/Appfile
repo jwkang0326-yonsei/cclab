@@ -1,0 +1,2 @@
+json_key_file("service-account.json") # Path to the json secret file - local only
+package_name("org.cclab.withbible") # The package name of your app

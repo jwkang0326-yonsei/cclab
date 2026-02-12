@@ -1,0 +1,113 @@
+name: App Store Deploy (Android & iOS)
+
+on:
+  push:
+    tags:
+      - 'v*' # v1.0.0+1 형식의 태그 푸시 시 실행
+  workflow_dispatch: # 수동 실행 허용
+
+jobs:
+  deploy_android:
+    name: Deploy Android to Google Play
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: ./app/android
+
+      # Keystore 복호화
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          
+      # Google Play Service Account JSON 복호화
+      - name: Decode Play Store JSON Key
+        run: |
+          echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | base64 --decode > android/service-account.json
+
+      - name: Build App Bundle (AAB)
+        env:
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          flutter pub get
+          flutter build appbundle --release 
+            --build-name=${GITHUB_REF_NAME#v} 
+            --build-number=${GITHUB_RUN_NUMBER}
+
+      - name: Upload to Play Store
+        working-directory: ./app/android
+        run: bundle exec fastlane internal
+
+  deploy_ios:
+    name: Deploy iOS to TestFlight
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: ./app/ios
+
+      - name: Install Dependencies
+        run: |
+          flutter pub get
+          cd ios
+          pod install
+
+      - name: Setup Fastlane Match
+        working-directory: ./app/ios
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+        run: bundle exec fastlane match appstore --readonly
+
+      - name: Build & Upload to TestFlight
+        working-directory: ./app/ios
+        env:
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+        run: |
+          flutter build ios --release --no-codesign 
+            --build-name=${GITHUB_REF_NAME#v} 
+            --build-number=${GITHUB_RUN_NUMBER}
+          bundle exec fastlane beta

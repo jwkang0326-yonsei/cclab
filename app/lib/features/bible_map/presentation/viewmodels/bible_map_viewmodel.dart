@@ -179,7 +179,33 @@ class BibleMapController {
       }
     }
   
-    // --- Gacha Logic ---
+    Future<void> lockWholeBook({
+    required String goalId,
+    required String bookKey,
+    required int chapterCount,
+  }) async {
+    try {
+      final user = _ref.read(currentUserProfileProvider).value;
+      if (user == null) throw Exception("User not logged in");
+
+      final List<String> allChapterKeys = List.generate(
+        chapterCount, 
+        (index) => "${bookKey}_${index + 1}"
+      );
+
+      await _ref.read(groupGoalRepositoryProvider).lockChapters(
+        goalId: goalId,
+        chapterKeys: allChapterKeys,
+        userId: user.uid,
+        userName: user.name ?? "Anonymous",
+      );
+    } catch (e) {
+      print("Lock Whole Book Error: $e");
+      rethrow;
+    }
+  }
+
+  // --- Gacha Logic ---
     String? pickRandomChapterKey(GroupMapStateModel mapState) {
       final openChapters = mapState.chapters.entries
           .where((e) => e.value.status == 'OPEN')

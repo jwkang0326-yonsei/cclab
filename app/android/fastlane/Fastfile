@@ -1,0 +1,16 @@
+default_platform(:android)
+
+platform :android do
+  desc "Submit a new Internal Build to Google Play"
+  lane :internal do
+    # Ensure the git status is clean
+    ensure_git_status_clean
+
+    # Upload the AAB to Play Store
+    upload_to_play_store(
+      track: 'internal',
+      aab: '../build/app/outputs/bundle/release/app-release.aab',
+      skip_submission: true # Just upload, don't submit for review automatically
+    )
+  end
+end

@@ -2,15 +2,14 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../core/constants/bible_constants.dart';
 
 class BibleGachaDialog extends StatefulWidget {
-  final List<String> openChapterKeys;
-  final Function(String key) onConfirm;
+  final List<Map<String, dynamic>> availableBooks;
+  final Function(Map<String, dynamic> book) onConfirm;
 
   const BibleGachaDialog({
     super.key,
-    required this.openChapterKeys,
+    required this.availableBooks,
     required this.onConfirm,
   });
 
@@ -24,16 +23,16 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
   late AnimationController _revealController;
   
   bool _isSpinning = true;
-  String _currentDisplayKey = "";
-  late String _finalKey;
+  Map<String, dynamic> _currentDisplayBook = {};
+  late Map<String, dynamic> _finalBook;
   
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _finalKey = (widget.openChapterKeys..shuffle()).first;
-    _currentDisplayKey = widget.openChapterKeys.first;
+    _finalBook = (List<Map<String, dynamic>>.from(widget.availableBooks)..shuffle()).first;
+    _currentDisplayBook = widget.availableBooks.first;
 
     _shakeController = AnimationController(
       vsync: this,
@@ -57,11 +56,10 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
     int count = 0;
     _timer = Timer.periodic(const Duration(milliseconds: 80), (timer) {
       setState(() {
-        _currentDisplayKey = widget.openChapterKeys[Random().nextInt(widget.openChapterKeys.length)];
+        _currentDisplayBook = widget.availableBooks[Random().nextInt(widget.availableBooks.length)];
       });
       count++;
       
-      // Gradually slow down
       if (count > 20) {
         timer.cancel();
         _stopAndReveal();
@@ -74,7 +72,7 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
       if (!mounted) return;
       setState(() {
         _isSpinning = false;
-        _currentDisplayKey = _finalKey;
+        _currentDisplayBook = _finalBook;
       });
       _shakeController.stop();
       _revealController.forward();
@@ -89,18 +87,6 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
     _glowController.dispose();
     _revealController.dispose();
     super.dispose();
-  }
-
-  String _formatKey(String key) {
-    if (key.isEmpty) return "";
-    final parts = key.split('_');
-    final bookKey = parts[0];
-    final chapter = parts[1];
-    
-    final allBooks = [...BibleConstants.oldTestament, ...BibleConstants.newTestament];
-    final book = allBooks.firstWhere((b) => b['key'] == bookKey, orElse: () => {'name': bookKey});
-    
-    return "${book['name']} ${chapter}장";
   }
 
   @override
@@ -134,7 +120,7 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
 
           // Main Card
           Container(
-            width: 320,
+            width: 340,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -151,9 +137,9 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  "오늘의 말씀 뽑기",
+                  "오늘 읽을 성경 뽑기",
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.brown,
                   ),
@@ -170,7 +156,7 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      _isSpinning ? Icons.casino : Icons.menu_book,
+                      _isSpinning ? Icons.casino : Icons.auto_stories,
                       size: 80,
                       color: Colors.orange[800],
                     ),
@@ -181,20 +167,53 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
                 
                 // Result Text
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: Colors.orange[50],
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Text(
-                    _formatKey(_currentDisplayKey),
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: _isSpinning ? Colors.grey : Colors.orange[900],
-                    ),
+                  child: Column(
+                    children: [
+                      Text(
+                        _currentDisplayBook['name'] ?? "",
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: _isSpinning ? Colors.grey : Colors.orange[900],
+                        ),
+                      ),
+                      if (!_isSpinning) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          "1장 ~ ${_currentDisplayBook['chapters']}장",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.orange[700],
+                          ),
+                        ),
+                      ]
+                    ],
                   ),
                 ),
+                
+                if (!_isSpinning) ...[
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      _currentDisplayBook['summary'] ?? "",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.brown[600],
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
                 
                 const SizedBox(height: 40),
                 
@@ -209,7 +228,7 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
                           height: 56,
                           child: FilledButton(
                             onPressed: () {
-                              widget.onConfirm(_finalKey);
+                              widget.onConfirm(_finalBook);
                               Navigator.pop(context);
                             },
                             style: FilledButton.styleFrom(
@@ -219,7 +238,7 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
                               ),
                             ),
                             child: const Text(
-                              "이 말씀으로 예약하기",
+                              "이 성경책 예약하기",
                               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -233,14 +252,14 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
                   )
                 else
                   const Text(
-                    "말씀을 고르고 있습니다...",
+                    "오늘 주실 말씀을 찾고 있어요...",
                     style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
                   ),
               ],
             ),
           ),
           
-          // Particles / Celebration Effect
+          // Celebration Effect
           if (!_isSpinning)
              const IgnorePointer(child: _CelebrationEffect()),
         ],
@@ -254,7 +273,6 @@ class _CelebrationEffect extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Simple mock celebration with icons
     return Stack(
       children: List.generate(10, (index) {
         final rand = Random();
