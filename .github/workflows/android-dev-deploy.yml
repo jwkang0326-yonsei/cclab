@@ -41,6 +41,7 @@ jobs:
       # Keystore 복호화
       - name: Decode Keystore
         run: |
+          mkdir -p android/app
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
       # key.properties 생성
