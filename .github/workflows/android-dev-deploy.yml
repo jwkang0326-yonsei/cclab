@@ -1,0 +1,67 @@
+name: Android Development Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy_firebase:
+    name: Build & Distribute to Firebase
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: ./app/android
+
+      - name: Install Fastlane Plugins
+        working-directory: ./app/android
+        run: bundle exec fastlane install_plugins
+
+      # Keystore 복호화
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      # key.properties 생성
+      - name: Create key.properties
+        run: |
+          echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+          
+      # Firebase Service Account JSON 복호화
+      - name: Decode Firebase Service Account
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}" | base64 --decode > android/service-account.json
+
+      - name: Build APK
+        run: |
+          flutter pub get
+          flutter build apk --release --build-number=${GITHUB_RUN_NUMBER}
+
+      - name: Distribute to Firebase
+        working-directory: ./app/android
+        run: |
+          bundle exec fastlane firebase_dist notes:"Auto-deploy from GitHub Actions (Run: ${GITHUB_RUN_NUMBER})"

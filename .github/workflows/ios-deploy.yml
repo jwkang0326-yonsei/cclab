@@ -1,0 +1,71 @@
+name: iOS Deploy to TestFlight
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'app/ios/**'
+      - 'app/lib/**'
+      - 'app/pubspec.yaml'
+  workflow_dispatch:
+
+jobs:
+  build_ios:
+    name: Build & Upload to TestFlight
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./app
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby (for Fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: ./app/ios
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.x' # 최신 stable 버전 사용 권장
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: |
+          flutter pub get
+          cd ios
+          pod install
+
+      # 인증서 복호화 (Match 사용)
+      # 필요한 Secrets: 
+      # - MATCH_PASSWORD: 인증서 저장소 암호
+      # - MATCH_GIT_BASIC_AUTHORIZATION: 인증서 Git 저장소 접근 토큰 (base64)
+      # - APP_STORE_CONNECT_API_KEY_KEY: .p8 파일 내용
+      # - APP_STORE_CONNECT_API_KEY_KEY_ID: Key ID
+      # - APP_STORE_CONNECT_API_KEY_ISSUER_ID: Issuer ID
+      - name: Setup Fastlane & Match
+        working-directory: ./app/ios
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+        run: |
+          bundle exec fastlane match appstore --readonly
+
+      - name: Build & Upload
+        working-directory: ./app/ios
+        env:
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+        run: |
+          flutter build ios --release --no-codesign
+          cd ios
+          bundle exec fastlane beta
