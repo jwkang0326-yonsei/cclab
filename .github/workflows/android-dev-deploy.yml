@@ -38,6 +38,10 @@ jobs:
         working-directory: ./app/android
         run: bundle exec fastlane install_plugins
 
+      # 디버깅을 위한 파일 목록 확인
+      - name: List files
+        run: ls -R
+
       # Keystore 복호화
       - name: Decode Keystore
         run: |
@@ -61,7 +65,7 @@ jobs:
       - name: Build APK
         run: |
           flutter clean
-          flutter pub get -v
+          flutter pub get
           flutter build apk --release --build-number=${GITHUB_RUN_NUMBER}
 
       - name: Distribute to Firebase
