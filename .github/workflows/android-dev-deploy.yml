@@ -9,9 +9,10 @@ jobs:
   deploy_firebase:
     name: Build & Distribute to Firebase
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./app
+jobs:
+  deploy_firebase:
+    name: Build & Distribute to Firebase
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
@@ -32,43 +33,39 @@ jobs:
         with:
           ruby-version: '3.3'
           bundler-cache: true
-          working-directory: ./app/android
+          working-directory: app/android
 
       - name: Install Fastlane Plugins
-        working-directory: ./app/android
+        working-directory: app/android
         run: bundle exec fastlane install_plugins
-
-      # 디버깅을 위한 파일 목록 확인
-      - name: List files
-        run: ls -R
 
       # Keystore 복호화
       - name: Decode Keystore
         run: |
-          rm -rf android/app/upload-keystore.jks || true
-          mkdir -p android/app
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          mkdir -p app/android/app
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/upload-keystore.jks
 
       # key.properties 생성
       - name: Create key.properties
         run: |
-          echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" > android/key.properties
-          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
-          echo "storeFile=upload-keystore.jks" >> android/key.properties
+          echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" > app/android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> app/android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> app/android/key.properties
+          echo "storeFile=upload-keystore.jks" >> app/android/key.properties
           
       # Firebase Service Account JSON 복호화
       - name: Decode Firebase Service Account
         run: |
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}" | base64 --decode > android/service-account.json
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}" | base64 --decode > app/android/service-account.json
 
       - name: Build APK
+        working-directory: app
         run: |
           flutter clean
           flutter pub get
           flutter build apk --release --build-number=${GITHUB_RUN_NUMBER}
 
       - name: Distribute to Firebase
-        working-directory: ./app/android
+        working-directory: app/android
         run: |
           bundle exec fastlane firebase_dist notes:"Auto-deploy from GitHub Actions (Run: ${GITHUB_RUN_NUMBER})"
