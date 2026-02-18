@@ -3,8 +3,8 @@ default_platform(:android)
 platform :android do
   desc "Submit a new Internal Build to Google Play"
   lane :internal do
-    # Ensure the git status is clean
-    ensure_git_status_clean
+    # Ensure the git status is clean, except in CI
+    ensure_git_status_clean unless is_ci
 
     # Upload the AAB to Play Store
     upload_to_play_store(
