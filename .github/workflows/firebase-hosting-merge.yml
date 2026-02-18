@@ -11,18 +11,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
-      - run: |
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Build Web
+        run: |
           cd app
           flutter pub get
           flutter build web
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}
-          channelId: live
-          projectId: cclab-4ec42
-          entryPoint: app
+
+      # Firebase Service Account JSON 복호화
+      - name: Decode Firebase Service Account
+        run: |
+          if echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}" | tr -d '\n ' | base64 --decode > app/service-account.json 2>/dev/null; then
+            echo "✅ Firebase Service Account decoded"
+          else
+            echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}" > app/service-account.json
+            echo "✅ Firebase Service Account written as raw"
+          fi
+
+      - name: Deploy to Firebase Hosting
+        run: |
+          cd app
+          export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
+          firebase deploy --only hosting:app-prod --project cclab-4ec42
