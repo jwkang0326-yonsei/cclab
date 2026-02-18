@@ -10,9 +10,6 @@ jobs:
   deploy_android:
     name: Deploy Android to Google Play
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./app
     steps:
       - uses: actions/checkout@v4
       
@@ -25,7 +22,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.x'
           channel: 'stable'
           cache: true
 
@@ -34,17 +30,23 @@ jobs:
         with:
           ruby-version: '3.3'
           bundler-cache: true
-          working-directory: ./app/android
+          working-directory: app/android
 
       # Keystore 복호화
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          mkdir -p app/android/app
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\n ' | base64 --decode > app/android/app/upload-keystore.jks
           
       # Google Play Service Account JSON 복호화
       - name: Decode Play Store JSON Key
         run: |
-          echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | base64 --decode > android/service-account.json
+          if echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | tr -d '\n ' | base64 --decode > app/android/service-account.json 2>/dev/null; then
+            echo "✅ Google Play JSON Key decoded from Base64"
+          else
+            echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" > app/android/service-account.json
+            echo "✅ Google Play JSON Key written as raw JSON"
+          fi
 
       - name: Build App Bundle (AAB)
         env:
@@ -52,28 +54,25 @@ jobs:
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
+          cd app
           flutter pub get
-          flutter build appbundle --release 
-            --build-name=${GITHUB_REF_NAME#v} 
+          flutter build appbundle --release \
+            --build-name=${GITHUB_REF_NAME#v} \
             --build-number=${GITHUB_RUN_NUMBER}
 
       - name: Upload to Play Store
-        working-directory: ./app/android
+        working-directory: app/android
         run: bundle exec fastlane internal
 
   deploy_ios:
     name: Deploy iOS to TestFlight
     runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: ./app
     steps:
       - uses: actions/checkout@v4
       
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.x'
           channel: 'stable'
           cache: true
 
@@ -82,16 +81,17 @@ jobs:
         with:
           ruby-version: '3.3'
           bundler-cache: true
-          working-directory: ./app/ios
+          working-directory: app/ios
 
       - name: Install Dependencies
         run: |
+          cd app
           flutter pub get
           cd ios
           pod install
 
       - name: Setup Fastlane Match
-        working-directory: ./app/ios
+        working-directory: app/ios
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
@@ -101,13 +101,13 @@ jobs:
         run: bundle exec fastlane match appstore --readonly
 
       - name: Build & Upload to TestFlight
-        working-directory: ./app/ios
+        working-directory: app/ios
         env:
           APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
         run: |
-          flutter build ios --release --no-codesign 
-            --build-name=${GITHUB_REF_NAME#v} 
+          flutter build ios --release --no-codesign \
+            --build-name=${GITHUB_REF_NAME#v} \
             --build-number=${GITHUB_RUN_NUMBER}
           bundle exec fastlane beta
