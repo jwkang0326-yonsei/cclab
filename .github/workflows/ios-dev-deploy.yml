@@ -9,10 +9,6 @@ jobs:
   deploy_firebase_ios:
     name: Build & Distribute iOS to Firebase
     runs-on: macos-latest
-jobs:
-  deploy_firebase_ios:
-    name: Build & Distribute iOS to Firebase
-    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       

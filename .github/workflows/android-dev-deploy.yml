@@ -9,10 +9,6 @@ jobs:
   deploy_firebase:
     name: Build & Distribute to Firebase
     runs-on: ubuntu-latest
-jobs:
-  deploy_firebase:
-    name: Build & Distribute to Firebase
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
