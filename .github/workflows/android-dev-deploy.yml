@@ -31,10 +31,6 @@ jobs:
           bundler-cache: true
           working-directory: app/android
 
-      - name: Install Fastlane Plugins
-        working-directory: app/android
-        run: bundle exec fastlane install_plugins
-
       # Keystore 복호화
       - name: Decode Keystore
         run: |

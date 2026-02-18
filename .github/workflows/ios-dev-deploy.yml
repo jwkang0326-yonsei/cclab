@@ -32,10 +32,6 @@ jobs:
           cd ios
           pod install
 
-      - name: Install Fastlane Plugins
-        working-directory: app/ios
-        run: bundle exec fastlane install_plugins
-
       - name: Distribute to Firebase
         working-directory: app/ios
         env:
