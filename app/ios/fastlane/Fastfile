@@ -1,5 +1,4 @@
 opt_out_usage
-skip_plugins_verification
 
 default_platform(:ios)
 

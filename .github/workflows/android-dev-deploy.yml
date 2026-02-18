@@ -31,7 +31,7 @@ jobs:
           bundler-cache: true
           working-directory: app/android
 
-      # Keystore 복호화 (tr -d로 불필요한 공백 제거 후 디코딩)
+      # Keystore 복호화
       - name: Decode Keystore
         run: |
           mkdir -p app/android/app
@@ -48,12 +48,11 @@ jobs:
       # Firebase Service Account JSON 복호화
       - name: Decode Firebase Service Account
         run: |
-          # 먼저 base64 디코딩 시도, 실패 시 원본이 JSON인 것으로 간주하여 저장
           if echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}" | tr -d '\n ' | base64 --decode > app/android/service-account.json 2>/dev/null; then
-            echo "✅ Firebase Service Account decoded from Base64"
+            echo "✅ Firebase Service Account decoded"
           else
             echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}" > app/android/service-account.json
-            echo "✅ Firebase Service Account written as raw JSON"
+            echo "✅ Firebase Service Account written as raw"
           fi
 
       - name: Build APK
@@ -67,6 +66,7 @@ jobs:
         env:
           FASTLANE_SKIP_UPDATE_CHECK: true
           FASTLANE_SKIP_PLUGINS_RSPEC: true
+          FASTLANE_SKIP_PLUGINS_VERIFICATION: true
         run: |
           cd app/android
           bundle exec fastlane firebase_dist notes:"Auto-deploy from GitHub Actions (Run: ${GITHUB_RUN_NUMBER})"

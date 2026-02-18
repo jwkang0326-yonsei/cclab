@@ -41,6 +41,7 @@ jobs:
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
           FASTLANE_SKIP_UPDATE_CHECK: true
           FASTLANE_SKIP_PLUGINS_RSPEC: true
+          FASTLANE_SKIP_PLUGINS_VERIFICATION: true
         run: |
           cd app/ios
           bundle exec fastlane firebase_dist notes:"Auto-deploy iOS from GitHub Actions (Run: ${GITHUB_RUN_NUMBER})"
