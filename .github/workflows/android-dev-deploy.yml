@@ -59,5 +59,8 @@ jobs:
 
       - name: Distribute to Firebase
         working-directory: app/android
+        env:
+          FASTLANE_SKIP_UPDATE_CHECK: true
+          FASTLANE_SKIP_PLUGINS_RSPEC: true
         run: |
           bundle exec fastlane firebase_dist notes:"Auto-deploy from GitHub Actions (Run: ${GITHUB_RUN_NUMBER})"
