@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../data/repositories/church_repository.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/user_repository.dart';
@@ -123,6 +124,27 @@ class _CreateChurchScreenState extends ConsumerState<CreateChurchScreen> {
               ],
             ),
             actions: [
+              TextButton(
+                onPressed: () {
+                  final message = '''
+[위드바이블] 성경 읽기 모임에 초대합니다! 📖
+
+💒 교회 이름: $name
+🔑 초대 코드: ${church.inviteCode}
+
+위 코드를 앱에 입력하여 저희 교회 공동체와 함께 성경 읽기를 시작해 보세요! ✨
+''';
+                  Share.share(message);
+                },
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.share, size: 18),
+                    SizedBox(width: 4),
+                    Text('초대장 공유'),
+                  ],
+                ),
+              ),
               TextButton(
                 onPressed: () {
                   context.pop(); // Close dialog
