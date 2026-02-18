@@ -35,9 +35,11 @@ jobs:
             echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}" > app/service-account.json
             echo "✅ Firebase Service Account written as raw"
           fi
+          ls -l app/service-account.json
 
       - name: Deploy to Firebase Hosting
         run: |
           cd app
-          export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
-          firebase deploy --only hosting:app-prod --project cclab-4ec42
+          firebase deploy --only hosting:app-prod --project cclab-4ec42 --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/app/service-account.json
