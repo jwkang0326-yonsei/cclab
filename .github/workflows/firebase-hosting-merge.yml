@@ -26,20 +26,14 @@ jobs:
           flutter pub get
           flutter build web
 
-      # Firebase Service Account JSON 복호화
-      - name: Decode Firebase Service Account
-        run: |
-          if echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}" | tr -d '\n ' | base64 --decode > app/service-account.json 2>/dev/null; then
-            echo "✅ Firebase Service Account decoded"
-          else
-            echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}" > app/service-account.json
-            echo "✅ Firebase Service Account written as raw"
-          fi
-          ls -l app/service-account.json
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CCLAB_4EC42 }}
 
       - name: Deploy to Firebase Hosting
         run: |
           cd app
+          # Apply target explicitly to avoid "target not configured" error
+          firebase target:apply hosting app-prod cclab-4ec42 --project cclab-4ec42
           firebase deploy --only hosting:app-prod --project cclab-4ec42 --non-interactive
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/app/service-account.json
