@@ -36,6 +36,8 @@ jobs:
         run: |
           mkdir -p app/android/app
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\n ' | base64 --decode > app/android/app/upload-keystore.jks
+          # 키스토어 내부의 별칭(Alias) 확인 (디버깅용)
+          keytool -list -v -keystore app/android/app/upload-keystore.jks -storepass "${{ secrets.ANDROID_STORE_PASSWORD }}" | grep "Alias name" || true
 
       # key.properties 생성
       - name: Create key.properties
@@ -43,7 +45,7 @@ jobs:
           echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" > app/android/key.properties
           echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> app/android/key.properties
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> app/android/key.properties
-          echo "storeFile=upload-keystore.jks" >> app/android/key.properties
+          echo "storeFile=app/upload-keystore.jks" >> app/android/key.properties
           
       # Firebase Service Account JSON 복호화
       - name: Decode Firebase Service Account
