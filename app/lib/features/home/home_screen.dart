@@ -79,7 +79,28 @@ class HomeScreen extends ConsumerWidget {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, __) => Center(child: Text("Error: $e")),
+            error: (e, __) => SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const SizedBox(height: 16),
+                    Text(
+                      "오류가 발생했습니다",
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "$e",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
         floatingActionButton: userProfileAsync.value?.role == 'leader' 

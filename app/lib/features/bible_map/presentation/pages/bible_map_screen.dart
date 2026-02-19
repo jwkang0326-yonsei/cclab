@@ -9,6 +9,7 @@ import '../../../../data/repositories/group_goal_repository.dart';
 import '../../../../data/repositories/user_repository.dart';
 import '../../../../core/constants/bible_constants.dart';
 import '../widgets/bible_gacha_dialog.dart';
+import '../widgets/bible_reading_bottom_sheet.dart';
 
 // Provider to fetch Goal Details
 final goalDetailsProvider = FutureProvider.family<GroupGoalModel?, String>((ref, goalId) async {
@@ -571,15 +572,33 @@ class _BibleMapScreenState extends ConsumerState<BibleMapScreen> {
      final isCollaborative = readingMethod == 'collaborative';
 
      if (isCollaborative) {
-       // --- Collaborative Tap Logic: Instant Toggle ---
-       ref.read(bibleMapControllerProvider).toggleCollaborativeCompletion(
-         goalId: goalId, 
-         book: bookKey, 
-         chapter: chapterNum
-       ).catchError((e) {
-         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("오류: $e")));
-       });
-       
+       // --- Collaborative Tap Logic: 바텀시트로 성경 읽기 + 완료 처리 ---
+       final currentUser = ref.watch(currentUserProfileProvider).value;
+       final myUid = currentUser?.uid;
+       final completedUsers = status?.completedUsers ?? [];
+       final isAlreadyCompleted = myUid != null && completedUsers.contains(myUid);
+
+       showBibleReadingBottomSheet(
+         context: context,
+         bookKey: bookKey,
+         bookName: bookName,
+         chapterNum: chapterNum,
+         isAlreadyCompleted: isAlreadyCompleted,
+         onComplete: () {
+           ref.read(bibleMapControllerProvider).toggleCollaborativeCompletion(
+             goalId: goalId,
+             book: bookKey,
+             chapter: chapterNum,
+           ).catchError((e) {
+             if (mounted) {
+               ScaffoldMessenger.of(context).showSnackBar(
+                 SnackBar(content: Text("오류: $e")),
+               );
+             }
+           });
+         },
+       );
+
        return;
      }
 

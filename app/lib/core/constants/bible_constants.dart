@@ -91,6 +91,16 @@ class BibleConstants {
     return bookKey;
   }
 
+  /// getBible API의 book number 매핑 (bookKey → API 번호)
+  /// 순서: 창세기=1, 출애굽기=2, ..., 요한계시록=66
+  static int? getApiBookNumber(String bookKey) {
+    final allBooks = [...oldTestament, ...newTestament];
+    for (int i = 0; i < allBooks.length; i++) {
+      if (allBooks[i]['key'] == bookKey) return i + 1;
+    }
+    return null;
+  }
+
   static int calculateTotalChapters(List<String> targetRange) {
     if (targetRange.isEmpty) return 1189; // Default to full bible if empty
 
