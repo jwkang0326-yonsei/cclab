@@ -45,7 +45,7 @@ jobs:
           echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" > app/android/key.properties
           echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> app/android/key.properties
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> app/android/key.properties
-          echo "storeFile=app/upload-keystore.jks" >> app/android/key.properties
+          echo "storeFile=upload-keystore.jks" >> app/android/key.properties
           
       # Firebase Service Account JSON 복호화
       - name: Decode Firebase Service Account
