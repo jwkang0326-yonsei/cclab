@@ -53,8 +53,8 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           flutter pub get
-          flutter build appbundle --release 
-            --build-name=${GITHUB_REF_NAME#v} 
+          flutter build appbundle --release \
+            --build-name=${GITHUB_REF_NAME#v} \
             --build-number=${GITHUB_RUN_NUMBER}
 
       - name: Upload to Play Store
@@ -98,7 +98,8 @@ jobs:
           APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
-        run: bundle exec fastlane match appstore --readonly
+        run: |
+          bundle exec fastlane match appstore --readonly
 
       - name: Build & Upload to TestFlight
         working-directory: ./app/ios
@@ -107,7 +108,7 @@ jobs:
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
         run: |
-          flutter build ios --release --no-codesign 
-            --build-name=${GITHUB_REF_NAME#v} 
+          flutter build ios --release --no-codesign \
+            --build-name=${GITHUB_REF_NAME#v} \
             --build-number=${GITHUB_RUN_NUMBER}
           bundle exec fastlane beta
