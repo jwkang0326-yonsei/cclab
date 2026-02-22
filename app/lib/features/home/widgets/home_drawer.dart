@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/repositories/church_repository.dart';
+import '../../../data/models/church_model.dart';
 
 class HomeDrawer extends ConsumerWidget {
   const HomeDrawer({super.key});
@@ -64,6 +68,21 @@ class HomeDrawer extends ConsumerWidget {
               context.push('/profile-setup');
             },
           ),
+
+          if (userAsync.value?.churchId != null && userAsync.value?.churchId != 'none')
+            ListTile(
+              leading: const Icon(Icons.person_add_alt_outlined),
+              title: const Text('성도 초대하기'),
+              subtitle: const Text('교회 초대 코드 확인 및 공유'),
+              onTap: () async {
+                final churchId = userAsync.value!.churchId!;
+                final church = await ref.read(churchRepositoryProvider).getChurch(churchId);
+                if (church != null && context.mounted) {
+                  context.pop(); // Close drawer
+                  _showInviteCodeDialog(context, church);
+                }
+              },
+            ),
           
           const Spacer(),
           const Divider(),
@@ -152,6 +171,82 @@ class HomeDrawer extends ConsumerWidget {
             },
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom + 10),
+        ],
+      ),
+    );
+  }
+
+  void _showInviteCodeDialog(BuildContext context, ChurchModel church) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${church.name} 초대하기'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('아래 초대 코드를 성도님들께 공유하여\n함께 성경 읽기를 시작해 보세요!'),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    church.inviteCode,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2.0,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy),
+                    tooltip: '코드 복사',
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: church.inviteCode));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('초대 코드가 복사되었습니다.')),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              final message = '''
+[위드바이블] 우리 교회 성경 읽기 모임에 초대합니다! 📖
+
+💒 교회명: ${church.name}
+🔑 초대 코드: ${church.inviteCode}
+
+앱 설치 후 위 코드를 입력하여 저희와 함께 믿음의 여정을 시작해 보세요! ✨
+''';
+              Share.share(message);
+            },
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.share, size: 18),
+                SizedBox(width: 4),
+                Text('초대장 보내기'),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('닫기'),
+          ),
         ],
       ),
     );

@@ -44,7 +44,7 @@ jobs:
       # Google Play Service Account JSON 복호화
       - name: Decode Play Store JSON Key
         run: |
-          echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | base64 --decode > android/service-account.json
+          echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" > android/cclab-4ec42-a7c6f0585f98.json
 
       - name: Build App Bundle (AAB)
         env:

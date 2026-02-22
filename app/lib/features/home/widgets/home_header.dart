@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../data/repositories/church_repository.dart';
 import '../../../data/repositories/group_repository.dart';
+import '../../../data/models/church_model.dart';
 
 import 'package:go_router/go_router.dart';
 
@@ -49,7 +52,7 @@ class HomeHeader extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
-                  if (user.churchId != null) ...[
+                  if (user.churchId != null && user.churchId != 'none') ...[
                     const SizedBox(height: 8),
                     _ChurchGroupInfo(
                       churchId: user.churchId!,
@@ -118,7 +121,7 @@ class _ChurchGroupInfo extends ConsumerWidget {
         if (!snapshot.hasData) return const SizedBox(height: 20); // Placeholder height
 
         final data = snapshot.data as List<dynamic>;
-        final church = data[0]; 
+        final church = data[0] as ChurchModel?; 
         final group = data.length > 1 ? data[1] : null;
 
         return Wrap(
@@ -131,12 +134,132 @@ class _ChurchGroupInfo extends ConsumerWidget {
               backgroundColor: role == 'admin' ? Colors.amber.withOpacity(0.2) : null,
             ),
             if (church != null)
-              _InfoBadge(icon: Icons.church, text: church.name),
+              _ChurchBadge(church: church),
             if (group != null)
               _GroupBadge(groupName: group.name),
           ],
         );
       },
+    );
+  }
+}
+
+/// 교회 배지 - 탭 시 초대 코드 확인 및 복사 팝업
+class _ChurchBadge extends StatelessWidget {
+  final ChurchModel church;
+
+  const _ChurchBadge({required this.church});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return InkWell(
+      onTap: () => _showInviteCodeDialog(context),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.secondaryContainer.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: theme.colorScheme.secondary.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.church, size: 14, color: theme.colorScheme.onSecondaryContainer),
+            const SizedBox(width: 6),
+            Text(
+              church.name,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSecondaryContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.info_outline, size: 12, color: theme.colorScheme.onSecondaryContainer.withOpacity(0.6)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showInviteCodeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${church.name} 초대하기'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('아래 초대 코드를 성도님들께 공유하여\n함께 성경 읽기를 시작해 보세요!'),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    church.inviteCode,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2.0,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy),
+                    tooltip: '코드 복사',
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: church.inviteCode));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('초대 코드가 복사되었습니다.')),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              final message = '''
+[위드바이블] 우리 교회 성경 읽기 모임에 초대합니다! 📖
+
+💒 교회명: ${church.name}
+🔑 초대 코드: ${church.inviteCode}
+
+앱 설치 후 위 코드를 입력하여 저희와 함께 믿음의 여정을 시작해 보세요! ✨
+''';
+              Share.share(message);
+            },
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.share, size: 18),
+                SizedBox(width: 4),
+                Text('초대장 보내기'),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('닫기'),
+          ),
+        ],
+      ),
     );
   }
 }

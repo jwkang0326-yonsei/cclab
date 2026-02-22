@@ -39,15 +39,54 @@ def clean_ansi_codes(text):
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|[\[0-?]*[ -/]*[@-~])')
     return ansi_escape.sub('', text)
 
+SESSION_MAP_FILE = "tg_sessions.json"
+
+def load_session_map():
+    if os.path.exists(SESSION_MAP_FILE):
+        try:
+            with open(SESSION_MAP_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_session_map(session_map):
+    try:
+        with open(SESSION_MAP_FILE, 'w') as f:
+            json.dump(session_map, f)
+    except Exception as e:
+        print(f"❌ 세션 맵 저장 오류: {e}")
+
+def get_latest_session_uuid():
+    try:
+        # 최근 세션 목록을 가져와서 가장 최근(첫 번째) 세션의 UUID 추출
+        result = subprocess.run(['gemini', '--list-sessions'], capture_output=True, text=True, env=os.environ)
+        if result.returncode == 0:
+            lines = result.stdout.strip().split('\n')
+            for line in lines:
+                # [uuid] 형식 매칭
+                match = re.search(r'\[([a-f0-9\-]{36})\]', line)
+                if match:
+                    return match.group(1)
+    except Exception as e:
+        print(f"⚠️ 최신 세션 UUID 확인 중 오류: {e}")
+    return None
+
 def run_gemini(prompt, chat_id):
     """로컬 gemini CLI를 실행하고 결과를 반환합니다."""
-    session_name = f"tg_user_{chat_id}"
+    session_map = load_session_map()
+    session_uuid = session_map.get(chat_id)
+    
     try:
-        # 사용자별 전용 세션 재개 시도
-        print(f"🚀 Gemini 실행 (Session: {session_name}): {prompt[:50]}...")
+        if session_uuid:
+            print(f"🚀 Gemini 실행 (Resume Session: {session_uuid}): {prompt[:50]}...")
+            cmd = ['gemini', '--yolo', '--resume', session_uuid, '-p', prompt]
+        else:
+            print(f"🚀 Gemini 실행 (New Session): {prompt[:50]}...")
+            cmd = ['gemini', '--yolo', '-p', prompt]
         
         process = subprocess.Popen(
-            ['gemini', '--yolo', '--resume', session_name, prompt],
+            cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=os.environ,
@@ -56,31 +95,39 @@ def run_gemini(prompt, chat_id):
         
         stdout, stderr = process.communicate()
         
-        if process.returncode != 0:
-            # 해당 사용자의 세션이 아직 없는 경우 새로 시작
-            if "No previous sessions found" in stderr or "not found" in stderr.lower():
-                print(f"⚠️ {session_name} 세션 없음. 새 세션으로 시작합니다.")
-                process = subprocess.Popen(
-                    ['gemini', '--yolo', '--session', session_name, prompt],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    env=os.environ,
-                    text=True
-                )
-                stdout, stderr = process.communicate()
+        # 세션 식별자 오류 또는 세션을 찾을 수 없는 경우
+        if process.returncode != 0 and ("Invalid session identifier" in stderr or "not found" in stderr.lower() or "Error resuming session" in stderr):
+            print(f"⚠️ 세션 {session_uuid}을(를) 사용할 수 없습니다. 새 세션으로 시작합니다.")
+            process = subprocess.Popen(
+                ['gemini', '--yolo', '-p', prompt],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=os.environ,
+                text=True
+            )
+            stdout, stderr = process.communicate()
             
-            # 재시도 후에도 에러가 있는 경우
-            if process.returncode != 0:
-                if "exhausted your capacity" in stderr:
-                    return "😅 Gemini가 잠시 지쳤어요. (API 사용량 제한 초과)\n잠시 후 다시 질문해주세요."
-                return f"⚠️ 오류가 발생했습니다:\n{clean_ansi_codes(stderr)[:300]}..."
+            # 새 세션 시작 후 UUID 업데이트
+            new_uuid = get_latest_session_uuid()
+            if new_uuid:
+                session_map[chat_id] = new_uuid
+                save_session_map(session_map)
+                print(f"✅ 새 세션 UUID 저장: {new_uuid}")
+
+        elif process.returncode == 0 and not session_uuid:
+            # 성공적으로 새 세션을 시작한 경우 UUID 저장
+            new_uuid = get_latest_session_uuid()
+            if new_uuid:
+                session_map[chat_id] = new_uuid
+                save_session_map(session_map)
+                print(f"✅ 새 세션 UUID 저장: {new_uuid}")
+            
+        if process.returncode != 0:
+            if "exhausted your capacity" in stderr:
+                return "😅 Gemini가 잠시 지쳤어요. (API 사용량 제한 초과)\n잠시 후 다시 질문해주세요."
+            return f"⚠️ 오류가 발생했습니다:\n{clean_ansi_codes(stderr)[:300]}..."
             
         return clean_ansi_codes(stdout).strip()
-
-    except FileNotFoundError:
-        return "❌ 오류: 'gemini' 명령어를 찾을 수 없습니다."
-    except Exception as e:
-        return f"❌ 실행 중 오류 발생: {str(e)}"
 
     except FileNotFoundError:
         return "❌ 오류: 'gemini' 명령어를 찾을 수 없습니다. PATH 설정을 확인해주세요."
@@ -132,19 +179,19 @@ def main():
                                 send_message("안녕하세요! 저는 당신의 로컬 Gemini CLI와 연결된 봇입니다. 무엇이든 물어보세요.", chat_id=chat_id)
                                 continue
                             
-                                                    if text == '/save_context':
-                                                        send_message("💾 대화 맥락을 압축하여 저장하는 중입니다...", chat_id=chat_id)
-                                                        response = run_gemini("현재까지의 대화 내용, 프로젝트 진행 상황, 주요 결정 사항을 요약해서 'context_history.md' 파일로 저장해줘. 나중에 이 파일을 읽어서 작업을 이어서 할 수 있도록 구체적으로 작성해줘.", chat_id=chat_id)
-                                                        print(f"🤖 답변 전송 ({len(response)}자)")
-                                                        send_message(response, chat_id=chat_id)
-                                                        continue
-                                                    
-                                                    # 처리 중임을 알림
-                                                    send_message("🤔 생각 중...", chat_id=chat_id)
-                                                    
-                                                    # Gemini CLI 실행
-                                                    response = run_gemini(text, chat_id=chat_id)
-                                                        # 결과 전송
+                            if text == '/save_context':
+                                send_message("💾 대화 맥락을 압축하여 저장하는 중입니다...", chat_id=chat_id)
+                                response = run_gemini("현재까지의 대화 내용, 프로젝트 진행 상황, 주요 결정 사항을 요약해서 'context_history.md' 파일로 저장해줘. 나중에 이 파일을 읽어서 작업을 이어서 할 수 있도록 구체적으로 작성해줘.", chat_id=chat_id)
+                                print(f"🤖 답변 전송 ({len(response)}자)")
+                                send_message(response, chat_id=chat_id)
+                                continue
+                            
+                            # 처리 중임을 알림
+                            send_message("🤔 생각 중...", chat_id=chat_id)
+                            
+                            # Gemini CLI 실행
+                            response = run_gemini(text, chat_id=chat_id)
+                            # 결과 전송
                             print(f"🤖 답변 전송 ({len(response)}자)")
                             send_message(response, chat_id=chat_id)
                 
