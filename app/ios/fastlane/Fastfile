@@ -20,13 +20,14 @@ platform :ios do
     ensure_git_status_clean unless is_ci
     
     # Sync certificates
-    match(type: "appstore", readonly: ENV["CI"])
+    match(type: "appstore", readonly: is_ci)
 
     # Build the application
     build_app(
       workspace: "Runner.xcworkspace", 
       scheme: "Runner",
-      export_method: "app-store"
+      export_method: "app-store",
+      silent: true
     )
 
     # Upload to TestFlight

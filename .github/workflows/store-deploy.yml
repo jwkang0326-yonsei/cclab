@@ -32,13 +32,13 @@ jobs:
           bundler-cache: true
           working-directory: app/android
 
-      # Keystore 복호화
+      # Keystore 복호화 (app/android/app/ 폴더에 저장)
       - name: Decode Keystore
         run: |
           mkdir -p app/android/app
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\n ' | base64 --decode > app/android/app/upload-keystore.jks
           
-      # Google Play Service Account JSON 복호화
+      # Google Play Service Account JSON 복호화 (app/android/ 폴더에 저장)
       - name: Decode Play Store JSON Key
         run: |
           if echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | tr -d '\n ' | base64 --decode > app/android/service-account.json 2>/dev/null; then
@@ -53,11 +53,15 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PATH: "upload-keystore.jks"
         run: |
           cd app
           flutter pub get
+          # 태그가 v1.0.0+1 형태일 경우 1.0.0만 build-name으로 사용
+          TAG_NAME=${GITHUB_REF_NAME#v}
+          BUILD_NAME=$(echo $TAG_NAME | cut -d'+' -f1)
           flutter build appbundle --release \
-            --build-name=${GITHUB_REF_NAME#v} \
+            --build-name=$BUILD_NAME \
             --build-number=${GITHUB_RUN_NUMBER}
 
       - name: Upload to Play Store
@@ -90,7 +94,20 @@ jobs:
           cd ios
           pod install
 
-      - name: Setup Fastlane Match
+      - name: Build Assets & iOS
+        env:
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+        run: |
+          cd app
+          TAG_NAME=${GITHUB_REF_NAME#v}
+          BUILD_NAME=$(echo $TAG_NAME | cut -d'+' -f1)
+          flutter build ios --release --no-codesign \
+            --build-name=$BUILD_NAME \
+            --build-number=${GITHUB_RUN_NUMBER}
+
+      - name: Fastlane Beta (Certs & Upload)
         working-directory: app/ios
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
@@ -98,16 +115,5 @@ jobs:
           APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
-        run: bundle exec fastlane match appstore --readonly
-
-      - name: Build & Upload to TestFlight
-        working-directory: app/ios
-        env:
-          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
-          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
-          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
-        run: |
-          flutter build ios --release --no-codesign \
-            --build-name=${GITHUB_REF_NAME#v} \
-            --build-number=${GITHUB_RUN_NUMBER}
-          bundle exec fastlane beta
+          CI: true
+        run: bundle exec fastlane beta
