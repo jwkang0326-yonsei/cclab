@@ -57,12 +57,13 @@ jobs:
         run: |
           cd app
           flutter pub get
-          # 태그가 v1.0.0+1 형태일 경우 1.0.0만 build-name으로 사용
+          # Generate version based on tag and current timestamp for build number
           TAG_NAME=${GITHUB_REF_NAME#v}
           BUILD_NAME=$(echo $TAG_NAME | cut -d'+' -f1)
+          BUILD_NUMBER=$(date +%s)
           flutter build appbundle --release \
             --build-name=$BUILD_NAME \
-            --build-number=${GITHUB_RUN_NUMBER}
+            --build-number=$BUILD_NUMBER
 
       - name: Upload to Play Store
         working-directory: app/android
@@ -103,9 +104,10 @@ jobs:
           cd app
           TAG_NAME=${GITHUB_REF_NAME#v}
           BUILD_NAME=$(echo $TAG_NAME | cut -d'+' -f1)
+          BUILD_NUMBER=$(date +%s)
           flutter build ios --release --no-codesign \
             --build-name=$BUILD_NAME \
-            --build-number=${GITHUB_RUN_NUMBER}
+            --build-number=$BUILD_NUMBER
 
       - name: Fastlane Beta (Certs & Upload)
         working-directory: app/ios
