@@ -112,7 +112,7 @@ jobs:
       # iOS API Key 파일 생성 (문자열 형식 에러 방지용)
       - name: Create iOS API Key file
         run: |
-          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}" > app/ios/fastlane/api_key.p8
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}" > app/ios/api_key.p8
 
       - name: Fastlane Beta (Certs & Upload)
         working-directory: app/ios

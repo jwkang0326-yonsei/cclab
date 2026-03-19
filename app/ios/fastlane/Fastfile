@@ -5,21 +5,18 @@ default_platform(:ios)
 platform :ios do
   before_all do
     # App Store Connect API Key setup using a physical file to avoid string format issues
-    api_key_path = "fastlane/api_key.p8"
+    # The file is created by the CI workflow in the current working directory (app/ios)
+    api_key_path = "api_key.p8"
+    
     if File.exist?(api_key_path)
       app_store_connect_api_key(
         key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
         issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
         key_filepath: api_key_path
       )
-    elsif ENV["APP_STORE_CONNECT_API_KEY_KEY"]
-      # Fallback for local or other environments
-      app_store_connect_api_key(
-        key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
-        issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
-        key_content: ENV["APP_STORE_CONNECT_API_KEY_KEY"].gsub("\\n", "\n"),
-        is_key_content_base64: false
-      )
+    else
+      UI.error("❌ API Key file not found at #{File.expand_path(api_key_path)}")
+      UI.user_error!("Please ensure the api_key.p8 file is created before running fastlane.")
     end
   end
 
