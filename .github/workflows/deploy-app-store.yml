@@ -3,8 +3,8 @@ name: App Store Deploy (Android & iOS)
 on:
   push:
     tags:
-      - 'v*' # v1.0.0+1 형식의 태그 푸시 시 실행
-  workflow_dispatch: # 수동 실행 허용
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   deploy_android:
@@ -25,27 +25,21 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-          bundler-cache: true
-          working-directory: app/android
-
-      # Keystore 복호화 (app/android/app/ 폴더에 저장)
       - name: Decode Keystore
         run: |
           mkdir -p app/android/app
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\n ' | base64 --decode > app/android/app/upload-keystore.jks
+          if echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | grep -q "="; then
+            echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/upload-keystore.jks
+          else
+            echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" > app/android/app/upload-keystore.jks
+          fi
           
-      # Google Play Service Account JSON 복호화 (app/android/ 폴더에 저장)
       - name: Decode Play Store JSON Key
         run: |
-          if echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | tr -d '\n ' | base64 --decode > app/android/service-account.json 2>/dev/null; then
-            echo "✅ Google Play JSON Key decoded from Base64"
+          if echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | grep -q "{"; then
+            echo '${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}' > app/android/cclab-4ec42-a7c6f0585f98.json
           else
-            echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" > app/android/service-account.json
-            echo "✅ Google Play JSON Key written as raw JSON"
+            echo -n "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | base64 --decode > app/android/cclab-4ec42-a7c6f0585f98.json
           fi
 
       - name: Build App Bundle (AAB)
@@ -57,13 +51,19 @@ jobs:
         run: |
           cd app
           flutter pub get
-          # Generate version based on tag and current timestamp for build number
           TAG_NAME=${GITHUB_REF_NAME#v}
           BUILD_NAME=$(echo $TAG_NAME | cut -d'+' -f1)
           BUILD_NUMBER=$(date +%s)
           flutter build appbundle --release \
             --build-name=$BUILD_NAME \
             --build-number=$BUILD_NUMBER
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: app/android
 
       - name: Upload to Play Store
         working-directory: app/android
@@ -95,11 +95,16 @@ jobs:
           cd ios
           pod install
 
+      - name: Create iOS API Key file
+        run: |
+          # 불필요한 줄바꿈 및 공백 제거 로직 포함
+          if echo "${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}" | grep -q "PRIVATE KEY"; then
+            echo "${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}" > app/ios/api_key.p8
+          else
+            echo -n "${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}" | base64 --decode > app/ios/api_key.p8
+          fi
+
       - name: Build Assets & iOS
-        env:
-          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
-          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
-          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
         run: |
           cd app
           TAG_NAME=${GITHUB_REF_NAME#v}
@@ -109,18 +114,11 @@ jobs:
             --build-name=$BUILD_NAME \
             --build-number=$BUILD_NUMBER
 
-      # iOS API Key 파일 생성 (Base64 디코딩으로 형식 보존)
-      - name: Create iOS API Key file
-        run: |
-          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}" | base64 --decode > app/ios/api_key.p8
-          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}" | base64 --decode > app/ios/fastlane/api_key.p8
-
       - name: Fastlane Beta (Certs & Upload)
         working-directory: app/ios
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
           CI: true
