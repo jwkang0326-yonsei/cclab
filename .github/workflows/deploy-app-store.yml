@@ -46,24 +46,22 @@ jobs:
             echo "❌ PLAY_STORE_JSON_KEY_BASE64 secret is empty!"
             exit 1
           fi
-          # JSON인지 Base64인지 판별하여 디코딩
-          if echo "$PLAY_STORE_JSON" | head -c 1 | grep -q "{"; then
-            # 이미 JSON 형태
-            echo "$PLAY_STORE_JSON" > app/android/fastlane/service-account.json
-          else
-            # Base64 인코딩된 상태 → 디코딩
-            echo "$PLAY_STORE_JSON" | base64 --decode > app/android/fastlane/service-account.json
-          fi
-          # 유효성 검증
-          echo "✅ service-account.json created. Size: $(wc -c < app/android/fastlane/service-account.json) bytes"
-          echo "📄 First chars: $(head -c 20 app/android/fastlane/service-account.json)"
+          # 1차: 원본 그대로 JSON인지 시도
+          echo "$PLAY_STORE_JSON" > app/android/fastlane/service-account.json
           if python3 -m json.tool app/android/fastlane/service-account.json > /dev/null 2>&1; then
-            echo "✅ Valid JSON file"
+            echo "✅ Raw JSON detected - service-account.json created"
           else
-            echo "❌ Invalid JSON file! Content may be corrupted."
-            echo "💡 Please check PLAY_STORE_JSON_KEY_BASE64 secret value."
-            exit 1
+            # 2차: Base64 디코딩 시도
+            echo "$PLAY_STORE_JSON" | base64 --decode > app/android/fastlane/service-account.json 2>/dev/null
+            if python3 -m json.tool app/android/fastlane/service-account.json > /dev/null 2>&1; then
+              echo "✅ Base64 decoded - service-account.json created"
+            else
+              echo "❌ Secret is neither valid JSON nor valid Base64-encoded JSON"
+              echo "💡 Please check PLAY_STORE_JSON_KEY_BASE64 secret value"
+              exit 1
+            fi
           fi
+          echo "📄 Size: $(wc -c < app/android/fastlane/service-account.json) bytes"
 
       - name: Build App Bundle (AAB)
         env:
