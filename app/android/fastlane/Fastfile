@@ -11,7 +11,8 @@ platform :android do
     # Upload the AAB to Play Store
     upload_to_play_store(
       track: 'internal',
-      aab: '../build/app/outputs/bundle/release/app-release.aab'
+      aab: '../build/app/outputs/bundle/release/app-release.aab',
+      json_key: 'service-account.json'
     )
   end
 

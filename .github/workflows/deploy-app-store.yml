@@ -36,11 +36,8 @@ jobs:
           
       - name: Decode Play Store JSON Key
         run: |
-          if echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | grep -q "{"; then
-            echo '${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}' > app/android/service-account.json
-          else
-            echo -n "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | base64 --decode > app/android/service-account.json
-          fi
+          # 텍스트 그대로 저장 (가장 안전)
+          echo '${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}' > app/android/service-account.json
 
       - name: Build App Bundle (AAB)
         env:
@@ -58,7 +55,7 @@ jobs:
             --build-name=$BUILD_NAME \
             --build-number=$BUILD_NUMBER
 
-      - name: Setup Ruby
+      - name: Setup Ruby & Update Plugins
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
@@ -67,7 +64,10 @@ jobs:
 
       - name: Upload to Play Store
         working-directory: app/android
-        run: bundle exec fastlane internal
+        run: |
+          bundle install
+          bundle exec fastlane update_plugins
+          bundle exec fastlane internal
 
   deploy_ios:
     name: Deploy iOS to TestFlight
@@ -97,7 +97,6 @@ jobs:
 
       - name: Create iOS API Key file
         run: |
-          # 불필요한 줄바꿈 및 공백 제거 로직 포함
           if echo "${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}" | grep -q "PRIVATE KEY"; then
             echo "${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}" > app/ios/api_key.p8
           else
@@ -122,4 +121,7 @@ jobs:
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
           CI: true
-        run: bundle exec fastlane beta
+        run: |
+          bundle install
+          bundle exec fastlane update_plugins
+          bundle exec fastlane beta
