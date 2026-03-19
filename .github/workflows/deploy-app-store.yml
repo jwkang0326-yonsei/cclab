@@ -37,9 +37,9 @@ jobs:
       - name: Decode Play Store JSON Key
         run: |
           if echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | grep -q "{"; then
-            echo '${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}' > app/android/cclab-4ec42-a7c6f0585f98.json
+            echo '${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}' > app/android/service-account.json
           else
-            echo -n "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | base64 --decode > app/android/cclab-4ec42-a7c6f0585f98.json
+            echo -n "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | base64 --decode > app/android/service-account.json
           fi
 
       - name: Build App Bundle (AAB)
