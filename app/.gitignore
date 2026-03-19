@@ -45,6 +45,7 @@ app.*.map.json
 /android/app/release
 
 /android/key.properties
-./keystore_base64.txt*.p8
+keystore_base64.txt
+*.p8
 service-account.json
 *.jks

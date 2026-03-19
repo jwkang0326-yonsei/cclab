@@ -35,19 +35,35 @@ jobs:
             echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" > app/android/app/upload-keystore.jks
           fi
           
-      # Google Play Service Account JSON 복구 (가장 안전한 printf 방식 사용)
+      # Google Play Service Account JSON 복구
       - name: Create Service Account JSON
         env:
           PLAY_STORE_JSON: ${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}
         run: |
-          mkdir -p app/android
-          # printf %s 는 데이터를 원본 그대로 파일에 덤프합니다.
-          if echo "$PLAY_STORE_JSON" | grep -q "{"; then
-            printf "%s" "$PLAY_STORE_JSON" > app/android/service-account.json
-          else
-            printf "%s" "$PLAY_STORE_JSON" | base64 --decode > app/android/service-account.json
+          mkdir -p app/android/fastlane
+          # Secret이 비어있는지 확인
+          if [ -z "$PLAY_STORE_JSON" ]; then
+            echo "❌ PLAY_STORE_JSON_KEY_BASE64 secret is empty!"
+            exit 1
           fi
-          echo "✅ service-account.json created. Size: $(wc -c < app/android/service-account.json) bytes"
+          # JSON인지 Base64인지 판별하여 디코딩
+          if echo "$PLAY_STORE_JSON" | head -c 1 | grep -q "{"; then
+            # 이미 JSON 형태
+            echo "$PLAY_STORE_JSON" > app/android/fastlane/service-account.json
+          else
+            # Base64 인코딩된 상태 → 디코딩
+            echo "$PLAY_STORE_JSON" | base64 --decode > app/android/fastlane/service-account.json
+          fi
+          # 유효성 검증
+          echo "✅ service-account.json created. Size: $(wc -c < app/android/fastlane/service-account.json) bytes"
+          echo "📄 First chars: $(head -c 20 app/android/fastlane/service-account.json)"
+          if python3 -m json.tool app/android/fastlane/service-account.json > /dev/null 2>&1; then
+            echo "✅ Valid JSON file"
+          else
+            echo "❌ Invalid JSON file! Content may be corrupted."
+            echo "💡 Please check PLAY_STORE_JSON_KEY_BASE64 secret value."
+            exit 1
+          fi
 
       - name: Build App Bundle (AAB)
         env:
@@ -105,18 +121,31 @@ jobs:
           cd ios
           pod install
 
-      # iOS API Key 파일 생성 (printf 방식으로 형식 완벽 보존)
+      # iOS API Key 파일 생성
       - name: Create iOS API Key file
         env:
           IOS_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
         run: |
-          mkdir -p app/ios
-          if echo "$IOS_API_KEY" | grep -q "PRIVATE KEY"; then
-            printf "%s" "$IOS_API_KEY" > app/ios/api_key.p8
-          else
-            printf "%s" "$IOS_API_KEY" | base64 --decode > app/ios/api_key.p8
+          mkdir -p app/ios/fastlane
+          # Secret이 비어있는지 확인
+          if [ -z "$IOS_API_KEY" ]; then
+            echo "❌ APP_STORE_CONNECT_API_KEY_KEY secret is empty!"
+            exit 1
           fi
-          echo "✅ api_key.p8 created. Size: $(wc -c < app/ios/api_key.p8) bytes"
+          # PEM 형식인지 Base64인지 판별
+          if echo "$IOS_API_KEY" | grep -q "PRIVATE KEY"; then
+            echo "$IOS_API_KEY" > app/ios/fastlane/api_key.p8
+          else
+            echo "$IOS_API_KEY" | base64 --decode > app/ios/fastlane/api_key.p8
+          fi
+          echo "✅ api_key.p8 created. Size: $(wc -c < app/ios/fastlane/api_key.p8) bytes"
+          # p8 파일 유효성 검증
+          if head -1 app/ios/fastlane/api_key.p8 | grep -q "PRIVATE KEY"; then
+            echo "✅ Valid p8 key file"
+          else
+            echo "⚠️ Warning: File doesn't look like a p8 key. First line:"
+            head -1 app/ios/fastlane/api_key.p8
+          fi
 
       - name: Build Assets & iOS
         run: |
