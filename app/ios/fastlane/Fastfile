@@ -36,8 +36,31 @@ platform :ios do
   lane :beta do
     ensure_git_status_clean unless is_ci
     
-    # Sync certificates
-    match(type: "appstore", readonly: is_ci)
+    # CI 환경에서 별도 키체인 생성 (키체인 비밀번호 팝업 방지)
+    if is_ci
+      keychain_name = "fastlane_tmp_keychain"
+      keychain_password = "fastlane_tmp_password"
+      
+      create_keychain(
+        name: keychain_name,
+        password: keychain_password,
+        default_keychain: true,
+        unlock: true,
+        timeout: 3600,
+        lock_when_sleeps: false
+      )
+      
+      # Sync certificates (CI: 임시 키체인 사용)
+      match(
+        type: "appstore",
+        readonly: true,
+        keychain_name: keychain_name,
+        keychain_password: keychain_password
+      )
+    else
+      # 로컬: 기존 방식
+      match(type: "appstore", readonly: false)
+    end
 
     # 프로젝트 서명 설정 업데이트 (최신 방식)
     update_code_signing_settings(
@@ -45,8 +68,8 @@ platform :ios do
       path: "Runner.xcodeproj",
       bundle_identifier: "org.cclab.withbible",
       profile_name: ENV["sigh_org.cclab.withbible_appstore_profile-name"],
-      code_signing_identity: "Apple Distribution", # 개발용 말고 배포용만 써라!
-      build_configuration: "Release"
+      code_sign_identity: "Apple Distribution",
+      build_configurations: "Release"
     )
 
     # Build the application
