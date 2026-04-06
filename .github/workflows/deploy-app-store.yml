@@ -86,6 +86,12 @@ jobs:
           bundler-cache: true
           working-directory: app/android
 
+      - name: Debug - List Files
+        run: |
+          echo "📂 Current directory: $(pwd)"
+          echo "🔍 Listing files in app/android/fastlane/:"
+          ls -R app/android/fastlane/ || echo "❌ app/android/fastlane/ not found"
+
       - name: Upload to Play Store
         working-directory: app/android
         run: |
@@ -155,6 +161,12 @@ jobs:
           flutter build ios --release --no-codesign \
             --build-name=$BUILD_NAME \
             --build-number=$BUILD_NUMBER
+
+      - name: Debug - List Files
+        run: |
+          echo "📂 Current directory: $(pwd)"
+          echo "🔍 Listing files in app/ios/fastlane/:"
+          ls -R app/ios/fastlane/ || echo "❌ app/ios/fastlane/ not found"
 
       - name: Fastlane Beta (Certs & Upload)
         working-directory: app/ios

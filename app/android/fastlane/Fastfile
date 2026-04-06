@@ -11,13 +11,29 @@ platform :android do
     # Ensure the git status is clean, except in CI
     ensure_git_status_clean unless is_ci
 
-    UI.message("📄 Service account path: #{SERVICE_ACCOUNT_PATH}")
-    UI.message("📄 File exists: #{File.exist?(SERVICE_ACCOUNT_PATH)}")
+    # 시크릿 파일 경로 확인 및 로그 출력
+    UI.message("🔍 Checking for service-account.json at: #{SERVICE_ACCOUNT_PATH}")
+    if File.exist?(SERVICE_ACCOUNT_PATH)
+      UI.message("✅ service-account.json found.")
+    else
+      UI.error("❌ ERROR: service-account.json not found!")
+      UI.message("💡 GitHub Actions workflow should create this file at 'app/android/fastlane/service-account.json'")
+      UI.user_error!("Please ensure the service-account.json file exists.")
+    end
+
+    aab_path = File.expand_path('../build/app/outputs/bundle/release/app-release.aab', __dir__)
+    UI.message("📦 Checking for AAB file at: #{aab_path}")
+    if File.exist?(aab_path)
+      UI.message("✅ AAB file found. Starting upload...")
+    else
+      UI.error("❌ ERROR: AAB file not found at #{aab_path}")
+      UI.user_error!("Build failed or path mismatch. Please check your flutter build command.")
+    end
 
     # Upload the AAB to Play Store
     upload_to_play_store(
       track: 'internal',
-      aab: '../build/app/outputs/bundle/release/app-release.aab',
+      aab: aab_path,
       json_key: SERVICE_ACCOUNT_PATH
     )
   end
