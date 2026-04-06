@@ -21,12 +21,24 @@ platform :android do
       UI.user_error!("Please ensure the service-account.json file exists.")
     end
 
-    aab_path = File.expand_path('../build/app/outputs/bundle/release/app-release.aab', __dir__)
-    UI.message("📦 Checking for AAB file at: #{aab_path}")
-    if File.exist?(aab_path)
+    # AAB 파일 경로 탐색 (플러터 루트 build 폴더 기준)
+    # 1. ../../build/ (정석)
+    # 2. ../build/ (혹시나 android/build에 생성될 경우)
+    possible_aab_paths = [
+      File.expand_path('../../build/app/outputs/bundle/release/app-release.aab', __dir__),
+      File.expand_path('../build/app/outputs/bundle/release/app-release.aab', __dir__)
+    ]
+    
+    UI.message("📦 Searching for AAB file in:")
+    possible_aab_paths.each { |path| UI.message("   - #{path} (Exists: #{File.exist?(path)})") }
+
+    aab_path = possible_aab_paths.find { |path| File.exist?(path) }
+
+    if aab_path
       UI.message("✅ AAB file found. Starting upload...")
     else
-      UI.error("❌ ERROR: AAB file not found at #{aab_path}")
+      UI.error("❌ ERROR: AAB file not found!")
+      UI.message("💡 Expected path: #{possible_aab_paths.first}")
       UI.user_error!("Build failed or path mismatch. Please check your flutter build command.")
     end
 
