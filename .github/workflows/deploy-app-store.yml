@@ -29,11 +29,7 @@ jobs:
       - name: Decode Keystore
         run: |
           mkdir -p app/android/app
-          if echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | grep -q "="; then
-            echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/upload-keystore.jks
-          else
-            echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" > app/android/app/upload-keystore.jks
-          fi
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/upload-keystore.jks
           
       # Google Play Service Account JSON 복구
       - name: Create and Verify Service Account JSON
