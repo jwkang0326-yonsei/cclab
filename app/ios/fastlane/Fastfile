@@ -39,11 +39,19 @@ platform :ios do
     # Sync certificates
     match(type: "appstore", readonly: is_ci)
 
+    # 자동 서명 비활성화 (CI 환경에서 필수)
+    disable_automatic_code_signing(path: "Runner.xcodeproj")
+
     # Build the application
     build_app(
       workspace: "Runner.xcworkspace", 
       scheme: "Runner",
       export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "org.cclab.withbible" => ENV["sigh_org.cclab.withbible_appstore_profile-name"]
+        }
+      },
       silent: true
     )
 
