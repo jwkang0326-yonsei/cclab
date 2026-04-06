@@ -122,20 +122,35 @@ jobs:
       # iOS API Key 파일 생성 및 검증
       - name: Create and Verify iOS API Key file
         env:
-          IOS_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+          IOS_API_KEY_V1: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+          IOS_API_KEY_V2: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
           # Fastfile이 fastlane/ 디렉토리에서 파일을 찾으므로 여기에 생성
           mkdir -p app/ios/fastlane
-          if [ -z "$IOS_API_KEY" ]; then
-            echo "❌ APP_STORE_CONNECT_API_KEY_KEY secret is empty!"
-            echo "💡 cclab 레포의 Settings > Secrets에 등록되어 있는지 확인하세요"
+          
+          # 두 가지 시크릿 이름 후보 중 값이 있는 것을 선택
+          FINAL_API_KEY=""
+          if [ -n "$IOS_API_KEY_V1" ]; then
+            FINAL_API_KEY="$IOS_API_KEY_V1"
+            echo "✅ Found secret using name: APP_STORE_CONNECT_API_KEY_KEY"
+          elif [ -n "$IOS_API_KEY_V2" ]; then
+            FINAL_API_KEY="$IOS_API_KEY_V2"
+            echo "✅ Found secret using name: APP_STORE_CONNECT_API_KEY"
+          fi
+
+          if [ -z "$FINAL_API_KEY" ]; then
+            echo "❌ ERROR: iOS API Key secret is empty!"
+            echo "💡 GitHub 레포의 Settings > Secrets > Actions에 다음 중 하나가 등록되어 있는지 확인하세요:"
+            echo "   1. APP_STORE_CONNECT_API_KEY_KEY"
+            echo "   2. APP_STORE_CONNECT_API_KEY"
             exit 1
           fi
-          # PEM 형식인지 Base64인지 판별
-          if echo "$IOS_API_KEY" | grep -q "PRIVATE KEY"; then
-            echo "$IOS_API_KEY" > app/ios/fastlane/api_key.p8
+
+          # PEM 형식인지 Base64인지 판별하여 저장
+          if echo "$FINAL_API_KEY" | grep -q "PRIVATE KEY"; then
+            echo "$FINAL_API_KEY" > app/ios/fastlane/api_key.p8
           else
-            echo -n "$IOS_API_KEY" | base64 --decode > app/ios/fastlane/api_key.p8
+            echo -n "$FINAL_API_KEY" | base64 --decode > app/ios/fastlane/api_key.p8
           fi
           # 유효성 검증
           if grep -q "PRIVATE KEY" app/ios/fastlane/api_key.p8; then
