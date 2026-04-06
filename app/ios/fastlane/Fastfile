@@ -39,7 +39,15 @@ platform :ios do
     # Sync certificates
     match(type: "appstore", readonly: is_ci)
 
-    # 자동 서명 비활성화 (CI 환경에서 필수)
+    # 프로젝트 파일에 프로파일 명시적으로 주입 (매우 중요!)
+    update_project_provisioning(
+      xcodeproj: "Runner.xcodeproj",
+      profile: ENV["sigh_org.cclab.withbible_appstore_profile-path"],
+      target_filter: "Runner",
+      build_configuration: "Release"
+    )
+
+    # 자동 서명 비활성화
     disable_automatic_code_signing(path: "Runner.xcodeproj")
 
     # Build the application
@@ -47,6 +55,7 @@ platform :ios do
       workspace: "Runner.xcworkspace", 
       scheme: "Runner",
       export_method: "app-store",
+      # 프로파일 맵핑 재확인
       export_options: {
         provisioningProfiles: {
           "org.cclab.withbible" => ENV["sigh_org.cclab.withbible_appstore_profile-name"]
