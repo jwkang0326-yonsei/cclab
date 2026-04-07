@@ -66,17 +66,25 @@ platform :ios do
     UI.message("☕️ Taking a 10-second break for session sync...")
     sleep(10)
 
-    # Upload to TestFlight (가장 표준적이고 안정적인 방식)
-    upload_to_testflight(
-      api_key: app_store_connect_api_key(
-        key_id: @key_id,
-        issuer_id: @issuer_id,
-        key_content: @key_content,
-        duration: 1200,
-        in_house: false
-      ),
-      skip_waiting_for_build_processing: true
-    )
+    # xcrun altool을 사용한 네이티브 업로드 방식 (Fastlane 우회)
+    # altool은 ~/private_keys 디렉토리에서 AuthKey_<key_id>.p8 형식의 파일을 찾습니다.
+    UI.message("🚀 Attempting NATIVE upload using xcrun altool...")
+    
+    ipa_path = ENV["IPA_OUTPUT_PATH"] || "Runner.ipa"
+    
+    # 1. 키 파일 물리적 배치 (altool 표준 경로)
+    sh("mkdir -p ~/private_keys")
+    sh("echo '#{@key_content}' > ~/private_keys/AuthKey_#{@key_id}.p8")
+    
+    # 2. 앱 유효성 검증 (Validate)
+    UI.message("🔍 Validating app before upload...")
+    sh("xcrun altool --validate-app --type ios --file '#{ipa_path}' --apiKey #{@key_id} --apiIssuer #{@issuer_id}")
+    
+    # 3. 앱 업로드 (Upload)
+    UI.message("⬆️ Uploading app to TestFlight...")
+    sh("xcrun altool --upload-app --type ios --file '#{ipa_path}' --apiKey #{@key_id} --apiIssuer #{@issuer_id}")
+    
+    UI.success("🎉 Successfully uploaded to TestFlight using native altool!")
   end
 
   desc "Distribute a new build to Firebase App Distribution"
