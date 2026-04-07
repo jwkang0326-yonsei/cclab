@@ -66,15 +66,16 @@ platform :ios do
     UI.message("☕️ Taking a 10-second break for session sync...")
     sleep(10)
 
-    # 업로드 직전, Fastlane 내부 엔진(Spaceship)이 자동으로 인식하는 환경변수 설정
-    # 이 방식이 가장 오류가 적고 확실한 인증 방식입니다.
-    UI.message("🔐 Setting up fresh authentication environment...")
-    ENV["SPACESHIP_CONNECT_API_KEY_ID"] = @key_id
-    ENV["SPACESHIP_CONNECT_API_ISSUER_ID"] = @issuer_id
-    ENV["SPACESHIP_CONNECT_API_KEY_CONTENT"] = @key_content
+    # 업로드 직전, 물리적인 .p8 파일 생성 (인증 안정성 확보)
+    api_key_file_path = File.expand_path("auth_key.p8", __dir__)
+    File.write(api_key_file_path, @key_content)
+    UI.message("💾 Physical API Key file created at: #{api_key_file_path}")
 
-    # Upload to TestFlight (인증 정보는 위 환경변수에서 자동으로 로드됨)
+    # Upload to TestFlight (파일 경로 방식을 사용하여 인증 도구 호환성 극대화)
     upload_to_testflight(
+      api_key_path: api_key_file_path,
+      api_key_id: @key_id,
+      api_key_issuer_id: @issuer_id,
       skip_waiting_for_build_processing: true
     )
   end
