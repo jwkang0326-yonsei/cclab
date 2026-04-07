@@ -66,16 +66,15 @@ platform :ios do
     UI.message("☕️ Taking a 10-second break for session sync...")
     sleep(10)
 
-    # 업로드 직전, 물리적인 .p8 파일 생성 (인증 안정성 확보)
-    api_key_file_path = File.expand_path("auth_key.p8", __dir__)
-    File.write(api_key_file_path, @key_content)
-    UI.message("💾 Physical API Key file created at: #{api_key_file_path}")
-
-    # Upload to TestFlight (파일 경로 방식을 사용하여 인증 도구 호환성 극대화)
+    # Upload to TestFlight (가장 표준적이고 안정적인 방식)
     upload_to_testflight(
-      api_key_path: api_key_file_path,
-      api_key_id: @key_id,
-      api_key_issuer_id: @issuer_id,
+      api_key: app_store_connect_api_key(
+        key_id: @key_id,
+        issuer_id: @issuer_id,
+        key_content: @key_content,
+        duration: 1200,
+        in_house: false
+      ),
       skip_waiting_for_build_processing: true
     )
   end
