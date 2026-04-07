@@ -177,3 +177,11 @@ jobs:
           bundle install
           bundle exec fastlane update_plugins
           bundle exec fastlane beta
+
+      - name: Upload IPA as Artifact
+        uses: actions/upload-artifact@v4
+        if: always() # 빌드 성공, 업로드 실패 시에도 아티팩트 보존
+        with:
+          name: WithBible-iOS-Build
+          path: app/ios/*.ipa
+          retention-days: 3
