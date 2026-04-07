@@ -66,20 +66,16 @@ platform :ios do
     UI.message("☕️ Taking a 10-second break for session sync...")
     sleep(10)
 
-    # 업로드 직전 최신 토큰 재발행 및 환경 변수 강제 설정
-    UI.message("🔄 Issuing a FRESH token for upload...")
-    fresh_key = app_store_connect_api_key(
-      key_id: @key_id,
-      issuer_id: @issuer_id,
-      key_content: @key_content,
-      duration: 500 # 짧고 굵게
-    )
+    # 업로드 직전, Fastlane 내부 엔진(Spaceship)이 자동으로 인식하는 환경변수 설정
+    # 이 방식이 가장 오류가 적고 확실한 인증 방식입니다.
+    UI.message("🔐 Setting up fresh authentication environment...")
+    ENV["SPACESHIP_CONNECT_API_KEY_ID"] = @key_id
+    ENV["SPACESHIP_CONNECT_API_ISSUER_ID"] = @issuer_id
+    ENV["SPACESHIP_CONNECT_API_KEY_CONTENT"] = @key_content
 
-    # Upload to TestFlight
+    # Upload to TestFlight (인증 정보는 위 환경변수에서 자동으로 로드됨)
     upload_to_testflight(
-      api_key: fresh_key,
-      skip_waiting_for_build_processing: true,
-      itms_transporter_type: "shell" # 인증 오류 해결을 위한 쉘 모드 사용
+      skip_waiting_for_build_processing: true
     )
   end
 
