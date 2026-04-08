@@ -66,25 +66,33 @@ platform :ios do
     UI.message("☕️ Taking a 10-second break for session sync...")
     sleep(10)
 
-    # xcrun altool을 사용한 네이티브 업로드 방식 (Fastlane 우회)
-    # altool은 ~/private_keys 디렉토리에서 AuthKey_<key_id>.p8 형식의 파일을 찾습니다.
-    UI.message("🚀 Attempting NATIVE upload using xcrun altool...")
+    # 인증 정보 디버깅 (보안을 위해 길지만 출력)
+    UI.message("🔍 Debugging Auth Info:")
+    UI.message("   - Key ID Length: #{@key_id.to_s.strip.length}")
+    UI.message("   - Issuer ID Length: #{@issuer_id.to_s.strip.length}")
     
-    ipa_path = ENV["IPA_OUTPUT_PATH"] || "Runner.ipa"
-    
-    # 1. 키 파일 물리적 배치 (altool 표준 경로)
-    sh("mkdir -p ~/private_keys")
-    sh("echo '#{@key_content}' > ~/private_keys/AuthKey_#{@key_id}.p8")
-    
-    # 2. 앱 유효성 검증 (Validate)
-    UI.message("🔍 Validating app before upload...")
-    sh("xcrun altool --validate-app --type ios --file '#{ipa_path}' --apiKey #{@key_id} --apiIssuer #{@issuer_id}")
-    
-    # 3. 앱 업로드 (Upload)
-    UI.message("⬆️ Uploading app to TestFlight...")
-    sh("xcrun altool --upload-app --type ios --file '#{ipa_path}' --apiKey #{@key_id} --apiIssuer #{@issuer_id}")
-    
-    UI.success("🎉 Successfully uploaded to TestFlight using native altool!")
+    # Upload to TestFlight using Pilot (Fastlane에서 가장 강력한 업로드 도구)
+    # api_key를 직접 생성하여 주입하는 가장 확실한 방식입니다.
+    begin
+      UI.message("🚀 Attempting upload via Pilot...")
+      pilot(
+        api_key: app_store_connect_api_key(
+          key_id: @key_id.to_s.strip,
+          issuer_id: @issuer_id.to_s.strip,
+          key_content: @key_content,
+          duration: 1200
+        ),
+        ipa: ENV["IPA_OUTPUT_PATH"] || "Runner.ipa",
+        skip_waiting_for_build_processing: true,
+        skip_submission: true # 심사 제출은 관리자가 직접
+      )
+      UI.success("🎉 Successfully uploaded to TestFlight!")
+    rescue => e
+      UI.error("❌ Upload failed with error: #{e.message}")
+      UI.message("💡 Tip: Please check if the API Key has 'App Manager' or 'Admin' role.")
+      UI.message("💡 Tip: Check for any pending Agreements in App Store Connect.")
+      raise e
+    end
   end
 
   desc "Distribute a new build to Firebase App Distribution"
