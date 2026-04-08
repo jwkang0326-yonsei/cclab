@@ -62,7 +62,7 @@ class HomeDrawer extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.person_outline),
             title: const Text('프로필 설정'),
-            subtitle: const Text('이름 및 직책 수정'),
+            subtitle: const Text('이름 및 직분 수정'),
             onTap: () {
               context.pop(); // Drawer 닫기
               context.push('/profile-setup');

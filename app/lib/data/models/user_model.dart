@@ -6,7 +6,7 @@ class UserModel {
   final String? groupId;
   final String? groupStatus; // 'pending', 'active', 'rejected'
   final String role; // 'member', 'leader', 'admin'
-  final String? position; // 직책 (예: 목사, 장로, 성도)
+  final String? position; // 직분 (예: 목사, 장로, 성도)
 
   UserModel({
     required this.uid,

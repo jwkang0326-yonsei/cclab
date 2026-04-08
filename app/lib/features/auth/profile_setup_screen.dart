@@ -116,7 +116,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             TextField(
               controller: _positionController,
               decoration: const InputDecoration(
-                labelText: '교회에서의 직책 (선택)',
+                labelText: '교회에서의 직분 (선택)',
                 hintText: '예: 목사, 장로, 성도',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.badge),

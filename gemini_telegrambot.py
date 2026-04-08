@@ -136,6 +136,21 @@ def run_gemini(prompt, chat_id):
 
 import traceback
 
+def delete_webhook(token):
+    """등록된 webhook을 삭제하여 getUpdates와의 충돌을 방지합니다."""
+    # drop_pending_updates=True를 추가하여 쌓여있던 업데이트를 삭제합니다.
+    url = f"https://api.telegram.org/bot{token}/deleteWebhook?drop_pending_updates=True"
+    try:
+        with urllib.request.urlopen(url, timeout=10) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            if data.get('result'):
+                print("✅ Webhook 삭제 및 대기 업데이트 정리 완료")
+            else:
+                print(f"⚠️ Webhook 삭제 응답: {data}")
+    except Exception as e:
+        print(f"⚠️ Webhook 삭제 중 오류 (무시하고 계속): {e}")
+
+
 def main():
     try:
         env = load_env()
@@ -145,7 +160,10 @@ def main():
         if not token or not authorized_users_raw:
             print("Error: .env 파일에 GEMINI_BOT_TOKEN과 ALLOWED_USER_ID가 필요합니다.")
             sys.exit(1)
-            
+
+        # Webhook 충돌 방지: 시작 시 항상 삭제
+        delete_webhook(token)
+
         # 쉼표로 구분된 ID들을 리스트로 변환
         authorized_users = [uid.strip() for uid in authorized_users_raw.split(',')]
         

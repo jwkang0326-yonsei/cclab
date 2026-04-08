@@ -106,7 +106,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       
       if (mounted) {
         // 신규 유저이거나 이름이 설정되지 않은 경우 프로필 설정 화면으로 이동
-        // 직책(position)은 선택 사항이므로 체크하지 않음
+        // 직분(position)은 선택 사항이므로 체크하지 않음
         final needsProfileSetup = isNewUser || 
             existingUser?.name == null || 
             existingUser!.name!.isEmpty;

@@ -2,8 +2,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/common/main_layout.dart';
 import '../features/home/home_screen.dart';
-import '../features/group/group_screen.dart'; // Import real GroupScreen
-import '../features/group/group_selection_screen.dart'; // 그룹 선택 화면
+import '../features/group/group_screen.dart';
+import '../features/group/group_selection_screen.dart';
 import '../features/group/join_group_screen.dart';
 import '../features/bible_map/presentation/pages/create_goal_screen.dart';
 import '../features/bible_map/presentation/pages/bible_map_screen.dart';
@@ -13,7 +13,7 @@ import '../features/auth/onboarding_screen.dart';
 import '../features/auth/create_church_screen.dart';
 import '../features/auth/profile_setup_screen.dart';
 import '../data/repositories/auth_repository.dart';
-import '../data/repositories/user_repository.dart'; // Import for user profile provider
+import '../data/repositories/user_repository.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -30,6 +30,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isOnboardingRoute = state.matchedLocation.startsWith('/onboarding');
       final isProfileSetupRoute = state.matchedLocation == '/profile-setup';
       final isGroupSelectionRoute = state.matchedLocation == '/group-selection';
+      final isInviteRoute = state.matchedLocation.startsWith('/invite');
 
       // 2. Unauthenticated User -> Login
       if (!isAuthenticated) {
@@ -37,13 +38,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // 3. Authenticated User -> Check Profile
-      // If profile is still loading, wait (return null)
       if (userProfileAsync.isLoading) return null;
-
       final userProfile = userProfileAsync.value;
 
       // Case A: Profile Setup Needed (Name is missing) -> Profile Setup
-      // Note: Position is optional, so we don't enforce it here to avoid infinite loops
       final needsProfileSetup = userProfile != null && 
           (userProfile.name == null || userProfile.name!.isEmpty);
 
@@ -51,26 +49,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isProfileSetupRoute ? null : '/profile-setup';
       }
       
-      // Allow access to Profile Setup if navigating there (even if setup is complete, e.g. editing)
       if (isProfileSetupRoute) return null;
       
-      // Case B: No Church ID -> Onboarding
-      // Only check if userProfile is LOADED but has no churchId.
-      // If userProfile is null, wait (it might be creating).
+      // Case B: No Church ID -> Onboarding (but allow Invite links)
       if (userProfile != null && userProfile.churchId == null) {
+        // 만약 초대 링크로 들어왔다면 온보딩보다 가입 화면을 우선시함
+        if (isInviteRoute) return null;
         return isOnboardingRoute ? null : '/onboarding';
       }
 
-      // Case B: Has Church ID -> Home
-      // If trying to access login or onboarding while fully set up, go Home
+      // Case C: Fully Authenticated & Set up
+      // If user is at login/onboarding, redirect to Home (unless they have a target invite)
       if (isLoginRoute || isOnboardingRoute) {
-        return '/home';
+        return isInviteRoute ? null : '/home';
       }
       
-      // 그룹 선택 화면은 별도 처리 (Phase 7에서 자동 분기 추가)
-      if (isGroupSelectionRoute) return null;
-
-      // Allow other routes
+      // Allow other authenticated routes (including /invite and /group-selection)
       return null;
     },
     routes: [
@@ -92,7 +86,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      // 그룹 선택 화면 (다중 그룹 사용자용)
       GoRoute(
         path: '/group-selection',
         builder: (context, state) => const GroupSelectionScreen(),

@@ -49,26 +49,40 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
       duration: const Duration(milliseconds: 800),
     );
 
-    _startSlotMachine();
+    _startBibleFlipping();
   }
 
-  void _startSlotMachine() {
+  void _startBibleFlipping() {
     int count = 0;
-    _timer = Timer.periodic(const Duration(milliseconds: 80), (timer) {
+    int maxCount = 25;
+    
+    void flip() {
+      if (!mounted) return;
+      
       setState(() {
         _currentDisplayBook = widget.availableBooks[Random().nextInt(widget.availableBooks.length)];
       });
       count++;
       
-      if (count > 20) {
-        timer.cancel();
+      if (count < maxCount) {
+        // 점점 느려지는 효과 (Exponential backoff style)
+        int delay = 50 + (pow(count / maxCount, 3) * 300).toInt();
+        _timer = Timer(Duration(milliseconds: delay), flip);
+        
+        // 햅틱 피드백 (책장 넘기는 느낌)
+        if (count % 2 == 0) {
+          HapticFeedback.lightImpact();
+        }
+      } else {
         _stopAndReveal();
       }
-    });
+    }
+    
+    flip();
   }
 
   void _stopAndReveal() {
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 300), () {
       if (!mounted) return;
       setState(() {
         _isSpinning = false;
@@ -76,7 +90,7 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
       });
       _shakeController.stop();
       _revealController.forward();
-      HapticFeedback.heavyImpact();
+      HapticFeedback.mediumImpact();
     });
   }
 
@@ -123,13 +137,13 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
             width: 340,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(32),
+              color: const Color(0xFFFDFCFB), // Soft Paper color
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: Colors.brown.withOpacity(0.15),
+                  blurRadius: 30,
+                  offset: const Offset(0, 15),
                 )
               ],
             ),
@@ -137,28 +151,32 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  "오늘 읽을 성경 뽑기",
+                  "오늘의 말씀 묵상",
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.brown,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF5D4037), // Brown 800
+                    letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 30),
                 
                 // Animated Icon
-                RotationTransition(
-                  turns: Tween(begin: -0.02, end: 0.02).animate(_shakeController),
+                ScaleTransition(
+                  scale: Tween(begin: 0.95, end: 1.05).animate(
+                    CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut)
+                  ),
                   child: Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.orange[50],
+                      color: const Color(0xFFEFEBE9), // Brown 50
                       shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFD7CCC8), width: 1),
                     ),
                     child: Icon(
-                      _isSpinning ? Icons.casino : Icons.auto_stories,
+                      Icons.auto_stories,
                       size: 80,
-                      color: Colors.orange[800],
+                      color: const Color(0xFF8D6E63), // Brown 400
                     ),
                   ),
                 ),
@@ -168,29 +186,32 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
                 // Result Text
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                   decoration: BoxDecoration(
-                    color: Colors.orange[50],
-                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE0E0E0), width: 0.5),
                   ),
                   child: Column(
                     children: [
                       Text(
                         _currentDisplayBook['name'] ?? "",
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 26,
                           fontWeight: FontWeight.bold,
-                          color: _isSpinning ? Colors.grey : Colors.orange[900],
+                          color: _isSpinning ? Colors.grey[400] : const Color(0xFF3E2723), // Brown 900
+                          fontFamily: 'NanumMyeongjo', // 만약 폰트가 있다면 명조체가 더 어울림
                         ),
                       ),
                       if (!_isSpinning) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         Text(
                           "1장 ~ ${_currentDisplayBook['chapters']}장",
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: Colors.orange[700],
+                            color: const Color(0xFF795548), // Brown 500
+                            letterSpacing: 1.2,
                           ),
                         ),
                       ]
@@ -199,17 +220,17 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
                 ),
                 
                 if (!_isSpinning) ...[
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       _currentDisplayBook['summary'] ?? "",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 15,
                         fontStyle: FontStyle.italic,
-                        color: Colors.brown[600],
-                        height: 1.4,
+                        color: Colors.brown[400],
+                        height: 1.6,
                       ),
                     ),
                   ),
@@ -232,36 +253,67 @@ class _BibleGachaDialogState extends State<BibleGachaDialog> with TickerProvider
                               Navigator.pop(context);
                             },
                             style: FilledButton.styleFrom(
-                              backgroundColor: Colors.orange[800],
+                              backgroundColor: const Color(0xFF5D4037), // Brown 700
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
+                              elevation: 2,
                             ),
                             child: const Text(
-                              "이 성경책 예약하기",
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              "말씀 예약하기",
+                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text("다음에 뽑을게요", style: TextStyle(color: Colors.grey)),
+                          child: Text(
+                            "다음에 묵상할게요", 
+                            style: TextStyle(color: Colors.brown[300], fontSize: 14)
+                          ),
                         ),
                       ],
                     ),
                   )
                 else
-                  const Text(
-                    "오늘 주실 말씀을 찾고 있어요...",
-                    style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                  Text(
+                    "오늘 주실 말씀을 기다립니다...",
+                    style: TextStyle(
+                      color: Colors.brown[300], 
+                      fontStyle: FontStyle.italic,
+                      fontSize: 14,
+                    ),
                   ),
               ],
             ),
           ),
           
-          // Celebration Effect
+          // Celebration Effect (Subtle Light instead of Stars)
           if (!_isSpinning)
-             const IgnorePointer(child: _CelebrationEffect()),
+             const IgnorePointer(child: _GlowEffect()),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlowEffect extends StatelessWidget {
+  const _GlowEffect();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        radialGradient: RadialGradient(
+          colors: [
+            Colors.amber.withOpacity(0.2),
+            Colors.transparent,
+          ],
+        ),
+      ),
+    );
+  }
+}
         ],
       ),
     );
